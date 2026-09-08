@@ -1,5 +1,5 @@
-// Prince Hacks Store - v5 SPEED (shell + image cache alag)
-const C = "phs-v69", IM = "phs-img-v1", MAXIMG = 80;
+﻿// Prince Hacks Store - v5 SPEED (shell + image cache alag)
+const C = "phs-v70", IM = "phs-img-v1", MAXIMG = 80;
 const A = ["./", "./index.html", "./css/style.css", "./js/store.js", "./js/firebase-config.js", "./manifest.json"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(C).then(c => c.addAll(A)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C && k !== IM).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

@@ -553,9 +553,12 @@ function goShop(){document.getElementById("products").scrollIntoView({behavior:"
 let _deferred=null;
 addEventListener("beforeinstallprompt",e=>{e.preventDefault();_deferred=e;
   if(!localStorage.getItem("phs_inst")){$("installBar").style.display="flex";$("footInstall").style.display="inline-block";}});
-function installApp(){if(_deferred){_deferred.prompt();_deferred.userChoice.then(()=>{_deferred=null;$("installBar").style.display="none";});}
+function installApp(){if(_deferred){$("installModal").classList.add("show");}
   else toast("Browser menu → Add to Home Screen dabao 📲");}
-function dismissInstall(){localStorage.setItem("phs_inst","1");$("installBar").style.display="none";}
+function doInstall(){if(_deferred){_deferred.prompt();_deferred.userChoice.then(()=>{_deferred=null;$("installBar").style.display="none";$("footInstall").style.display="none";$("installModal").classList.remove("show");});}
+  else{toast("Browser menu → Add to Home Screen dabao 📲");}}
+function dismissInstall(){localStorage.setItem("phs_inst","1");$("installBar").style.display="none";$("installModal").classList.remove("show");}
+$("installModal").addEventListener("click",e=>{if(e.target.id==="installModal")dismissInstall();});
 function confettiBurst(){try{const c=$("confettiCv"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;
   const P=[...Array(120)].map(()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.4,w:6+Math.random()*6,h:8+Math.random()*8,
     vy:2+Math.random()*3,vx:-1.5+Math.random()*3,r:Math.random()*Math.PI,vr:-.1+Math.random()*.2,

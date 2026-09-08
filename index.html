@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
@@ -6,8 +6,8 @@
 <title>Prince Hacks Store - Game Panel, Source Code, Projects</title>
 <meta name="description" content="Prince Hacks Store - Game Panel, Source Code, Video Files aur Projects. UPI payment, instant delivery.">
 <meta http-equiv="origin-trial" content="">
-<link rel="preload" href="css/style.css?v=85" as="style">
-<link rel="stylesheet" href="css/style.css?v=85">
+<link rel="preload" href="css/style.css?v=86" as="style">
+<link rel="stylesheet" href="css/style.css?v=86">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2874f0">
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style">
@@ -78,6 +78,8 @@
 <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
 <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v6a5 5 0 0 1-10 0V4zM7 6H4a0 0 0 0 0 0 4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9zM10 21h4"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-10zM9 21v-7h6v7"/></symbol>
 <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5 5l14 14"/></symbol>
 </svg>
 
@@ -345,10 +347,33 @@
   <div class="ct-head"><div class="ct-avatar"><i class="fa-solid fa-headset"></i></div><h3>Support / Contact</h3><p>Jispe bhi baat karni ho — directly kholo</p></div>
   <div id="contactList"></div></div></div>
 
+<!-- INSTALL MODAL -->
+<div class="modal-bg" id="installModal">
+  <div class="modal install-modal">
+    <button class="modal-close" onclick="dismissInstall()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="inst-top">
+      <div class="inst-logo"><i class="fa-solid fa-code"></i></div>
+      <div class="inst-appinfo"><b id="instName">Prince Hacks Store</b><span>App · Free · Fast</span></div>
+    </div>
+    <h3>Store ab <span>App</span> ban gaya!</h3>
+    <p class="inst-sub">Install karo, 1-tap me turant shopping shuru. Koi loading nahi, koi rukawat nahi.</p>
+    <ul class="inst-perks">
+      <li><svg class="ic"><use href="#i-bolt"/></svg><span>1-tap fast open, no page loading</span></li>
+      <li><svg class="ic"><use href="#i-rocket"/></svg><span>Naye products aur deals sabse pehle</span></li>
+      <li><svg class="ic"><use href="#i-bell"/></svg><span>Offer alerts turant Home screen par</span></li>
+      <li><svg class="ic"><use href="#i-mobile"/></svg><span>Home screen par app ka badge lagao</span></li>
+    </ul>
+    <button class="btn btn-primary btn-block btn-lg" onclick="doInstall()"><svg class="ic"><use href="#i-download"/></svg> Install Karo</button>
+    <button class="inst-later" onclick="dismissInstall()">Abhi nahin, baad me</button>
+  </div>
+</div>
+
 <!-- INSTALL -->
 <div class="install-bar" id="installBar" style="display:none">
-  <span><svg class="ic"><use href="#i-mobile"/></svg> <b>App install karo</b> - fast shopping, 1-tap open!</span>
-  <div><button onclick="installApp()">Install</button><button class="dim" onclick="dismissInstall()"><svg class="ic"><use href="#i-close"/></svg></button></div>
+  <div class="inst-ic"><i class="fa-solid fa-code"></i></div>
+  <div class="inst-txt"><b>Prince Hacks Store App</b><span>Install karo - 1-tap me kholo!</span></div>
+  <button class="install-go" onclick="installApp()">Install</button>
+  <button class="dim" onclick="dismissInstall()"><svg class="ic"><use href="#i-close"/></svg></button>
 </div>
 
 <canvas id="confettiCv"></canvas>
@@ -366,7 +391,7 @@
 <button class="cart-pill" id="cartPill" onclick="openCart()" style="display:none"><i class="fa-solid fa-cart-shopping"></i><span id="pillTxt">Cart</span></button>
 
 <script defer src="js/firebase-config.js?v=17"></script>
-<script defer src="js/store.js?v=65"></script>
+<script defer src="js/store.js?v=66"></script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
 </body>
 </html>
