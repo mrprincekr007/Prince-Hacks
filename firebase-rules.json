@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "settings": { ".read": true, ".write": "auth != null" },
+    "products": {
+      ".read": true,
+      "$pid": {
+        ".write": "auth != null",
+        "stock": { ".write": true }
+      }
+    },
+    "coupons": { ".read": true, ".write": "auth != null" },
+    "orders": {
+      ".read": true,
+      ".write": true,
+      "$oid": {
+        ".validate": "newData.hasChildren(['orderId','name','items'])"
+      }
+    },
+    "reviews": {
+      ".read": true,
+      "$rid": { ".write": "auth != null || (!$data.exists() && newData.exists())" }
+    },
+    "queries": {
+      ".read": true,
+      "$qid": { ".write": "auth != null || (!$data.exists() && newData.exists())" }
+    },
+    "keys": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

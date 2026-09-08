@@ -1,0 +1,12 @@
+{
+  "name": "Prince Hacks Store",
+  "short_name": "Prince Store",
+  "description": "Game Panel, Source Code, Files, Projects + har cheez - UPI payment, instant delivery.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2874f0",
+  "icons": [
+    { "src": "https://cdn-icons-png.flaticon.com/512/3081/3081559.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

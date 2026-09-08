@@ -1,0 +1,344 @@
+﻿<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Prince Hacks Store</title>
+<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-wrap">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="login-grid" id="loginBoxAnim">
+    <div class="login-side">
+      <div class="brand-ico"><i class="fa-solid fa-bolt"></i></div>
+      <h1 class="brand-name">Prince <span>Hacks</span></h1>
+      <p class="brand-tag">Store Admin Panel — secure, fast, full control.</p>
+      <ul class="brand-points">
+        <li><i class="fa-solid fa-shield-halved"></i><span>Firebase Authentication se fully secured</span></li>
+        <li><i class="fa-solid fa-bolt"></i><span>Live products, orders aur revenue control</span></li>
+        <li><i class="fa-solid fa-mobile-screen"></i><span>Phone aur PC dono par mast experience</span></li>
+      </ul>
+      <div class="brand-foot">© <span id="yr"></span> Prince Hacks Store</div>
+    </div>
+    <div class="login-card">
+      <div class="lc-head">
+        <div class="lc-ico"><i class="fa-solid fa-user-lock"></i></div>
+        <h2>Admin Login</h2>
+        <p>Apna Gmail aur password daalo</p>
+      </div>
+      <div class="lc-body">
+        <label class="inp"><i class="fa-solid fa-envelope"></i><input type="email" id="admEmail" placeholder="Gmail likho" autocomplete="email" inputmode="email"></label>
+        <label class="inp"><i class="fa-solid fa-lock"></i><input type="password" id="admPass" placeholder="Password likho" autocomplete="current-password"><button type="button" class="eye" onclick="togglePass()" title="Dikhana/Chupana" tabindex="-1">👁️</button></label>
+        <button class="login-go" id="loginBtn" onclick="adminLogin()"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+        <button type="button" class="save-go" onclick="saveAuth()"><i class="fa-solid fa-floppy-disk"></i> Save Gmail &amp; Password</button>
+        <small id="saveHint"></small>
+        <small id="loginErr"></small>
+        <a class="back-store" href="../index.html">← Store par wapas</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel" style="display:none">
+  <aside class="sidebar">
+    <div class="side-logo"><i class="fa-solid fa-code"></i> Prince Admin</div>
+    <button class="side-group open" data-g="main" onclick="toggleGroup(this)" title="Kholo/Band karo"><span class="grpi"><i class="fa-solid fa-gauge-high"></i>Main</span><i class="fa-solid facv fa-angle-down"></i></button>
+    <div class="side-grp open">
+      <button class="side-btn active" data-tab="dash"><i class="fa-solid fa-gauge-high"></i> Dashboard</button>
+    </div>
+    <button class="side-group open" data-g="products" onclick="toggleGroup(this)" title="Kholo/Band karo"><span class="grpi"><i class="fa-solid fa-boxes-stacked"></i>Products</span><i class="fa-solid facv fa-angle-down"></i></button>
+    <div class="side-grp open">
+      <button class="side-btn" data-tab="products"><i class="fa-solid fa-box"></i> Products <span id="pCountSide">0</span></button>
+      <button class="side-btn" data-tab="cats"><i class="fa-solid fa-folder-tree"></i> Categories</button>
+      <button class="side-btn" data-tab="coupons"><i class="fa-solid fa-ticket"></i> Coupons</button>
+      <button class="side-btn" data-tab="keys"><i class="fa-solid fa-key"></i> Keys <span id="kCountSide">0</span></button>
+    </div>
+    <button class="side-group" data-g="sales" onclick="toggleGroup(this)" title="Kholo/Band karo"><span class="grpi"><i class="fa-solid fa-sack-dollar"></i>Sales</span><i class="fa-solid facv fa-angle-right"></i></button>
+    <div class="side-grp">
+      <button class="side-btn" data-tab="orders"><i class="fa-solid fa-receipt"></i> Orders <span id="oCountSide">0</span></button>
+      <button class="side-btn" data-tab="payments"><i class="fa-solid fa-credit-card"></i> Payments <span id="payCountSide">0</span></button>
+      <button class="side-btn" data-tab="report"><i class="fa-solid fa-chart-simple"></i> Sales Report</button>
+      <button class="side-btn" data-tab="customers"><i class="fa-solid fa-users"></i> Customers</button>
+    </div>
+    <button class="side-group" data-g="support" onclick="toggleGroup(this)" title="Kholo/Band karo"><span class="grpi"><i class="fa-solid fa-headset"></i>Support</span><i class="fa-solid facv fa-angle-right"></i></button>
+    <div class="side-grp">
+      <button class="side-btn" data-tab="queries"><i class="fa-solid fa-message"></i> Messages <span id="qCountSide">0</span></button>
+      <button class="side-btn" data-tab="reviews"><i class="fa-solid fa-star"></i> Reviews</button>
+      <button class="side-btn" data-tab="broadcast"><i class="fa-solid fa-bullhorn"></i> Broadcast</button>
+    </div>
+    <button class="side-group" data-g="system" onclick="toggleGroup(this)" title="Kholo/Band karo"><span class="grpi"><i class="fa-solid fa-server"></i>System</span><i class="fa-solid facv fa-angle-right"></i></button>
+    <div class="side-grp">
+      <button class="side-btn" data-tab="backup"><i class="fa-solid fa-database"></i> Backup &amp; Restore</button>
+      <button class="side-btn" data-tab="settings"><i class="fa-solid fa-gear"></i> Settings</button>
+    </div>
+    <div class="side-foot">
+      <a href="../index.html" target="_blank"><i class="fa-solid fa-store"></i> Store Dekho</a>
+      <button onclick="adminLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+    </div>
+  </aside>
+  <div class="side-overlay" onclick="closeSide()"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="tb-left"><button class="tb-btn" onclick="toggleSide()" title="Sidebar">☰</button><h2 id="tabTitle">📊 Dashboard</h2></div>
+      <div class="tb-right">
+        <input id="topSearch" placeholder="🔍 Search... (products/orders)" oninput="topGo(this.value)">
+        <button class="tb-btn" onclick="toggleAdminTheme()" title="Dark/Light">🌙</button>
+        <span id="syncClock" title="Last sync">🕒 --:--</span>
+        <span id="connDot">🟡 connecting...</span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="tab-dash" class="tab show">
+      <div class="cards">
+        <div class="card blue"><i class="fa-solid fa-box"></i><div><b id="stProducts">0</b><span>Products</span></div></div>
+        <div class="card green"><i class="fa-solid fa-receipt"></i><div><b id="stOrders">0</b><span>Orders</span></div></div>
+        <div class="card orange"><i class="fa-solid fa-indian-rupee-sign"></i><div><b id="stRevenue">₹0</b><span>Revenue</span></div></div>
+        <div class="card red"><i class="fa-solid fa-clock"></i><div><b id="stPending">0</b><span>Pending</span></div></div>
+        <div class="card green"><i class="fa-solid fa-sun"></i><div><b id="stToday">₹0</b><span>Today</span></div></div>
+        <div class="card blue"><i class="fa-solid fa-message"></i><div><b id="stQuery">0</b><span>Queries</span></div></div>
+      </div>
+      <div class="panel-box">
+        <h3>⚡ Shortcuts</h3>
+        <div class="qa-row">
+          <button onclick="goTab('orders')">🧾 Orders Dekho</button>
+          <button onclick="goTab('payments')">💳 Payments / Approve</button>
+          <button onclick="goTab('report')">📈 Sales Report</button>
+          <button onclick="goTab('products')">➕ Naya Product</button>
+          <button onclick="goTab('broadcast')">📢 Broadcast</button>
+        </div>
+      </div>
+      <div class="panel-box"><h3>🕒 Latest Orders</h3><div id="recentOrders"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div></div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section id="tab-cats" class="tab">
+      <div class="panel-box"><h3>🗂️ Categories — naam + emoji set karo</h3>
+        <p class="hint">Store me categories products se auto ban rahi hain. Yahan har category ka <b>naam</b> aur <b>emoji</b> badal sakte ho — save karte hi store par live dikhega.</p>
+        <div id="catListBox"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+      </div>
+    </section>
+
+    <!-- SALES REPORT -->
+    <section id="tab-report" class="tab">
+      <div class="panel-box"><h3>📈 Sales Report (last 7 din)</h3>
+        <div class="chart-grid"><div><canvas id="salesChart" height="140"></canvas></div><div><canvas id="catChart" height="140"></canvas></div></div>
+        <div class="qa-row">
+          <button onclick="exportOrdersCSV()">📥 Orders CSV</button>
+          <button onclick="exportProductsCSV()">📥 Products CSV</button>
+        </div>
+      </div>
+      <div class="panel-box"><h3>⚠️ Low Stock (≤5)</h3><div id="lowStock">...</div></div>
+      <div class="panel-box"><h3>🏆 Top Products</h3><div id="topProducts">...</div></div>
+    </section>
+
+    <!-- BROADCAST -->
+    <section id="tab-broadcast" class="tab">
+      <div class="panel-box"><h3>📢 Broadcast — sab customers ko WhatsApp</h3>
+        <p class="hint">Neeche message likho ({name} = customer ka naam). Phir "Messages Kholo" dabao — har customer ke liye WhatsApp message ready. Note: WhatsApp har message ko alag kholta hai.</p>
+        <textarea id="bcastMsg" rows="4" placeholder="Namaste {name} 🙏 Prince Hacks Store me Aaj KA SPECIAL OFFER - 50% OFF! Order karo...">Namaste {name} 🙏
+Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 😍</textarea>
+        <div class="qa-row">
+          <button class="green" onclick="bcastOpen()">📲 Messages Kholo (<span id="bcastSelCount">0</span>)</button>
+          <button onclick="bcastCopyAll()">📋 Saare Numbers Copy</button>
+        </div>
+        <p class="hint">Total customers: <b id="bcastCount">0</b> (orders se)</p>
+        <div id="bcastList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+      </div>
+    </section>
+
+    <!-- BACKUP -->
+    <section id="tab-backup" class="tab">
+      <div class="panel-box"><h3>💾 Backup &amp; Restore</h3>
+        <div class="qa-row">
+          <button onclick="exportBackup()">💾 Full Backup Download</button>
+          <button onclick="importBackup.click()">📤 Restore Backup</button>
+          <input type="file" id="importBackup" accept=".json" style="display:none" onchange="importBackupFile(this)">
+          <button onclick="exportOrdersCSV()">📥 Orders CSV</button>
+          <button onclick="exportProductsCSV()">📥 Products CSV</button>
+        </div>
+      </div>
+      <div class="panel-box"><h3>🌱 Setup (pehli baar)</h3>
+        <p class="hint">Firebase khaali hai? <b>Seed</b> dabao — demo products + coupons aa jayenge, phir store live ho jayega.</p>
+        <div class="qa-row">
+          <button onclick="seedProducts()">🌱 Demo Products Firebase Me Daalo</button>
+          <button onclick="seedCoupons()">🎟️ Default Coupons Daalo</button>
+        </div>
+      </div>
+      <div class="panel-box"><h3>🔥 Danger Zone</h3><button class="del" onclick="if(confirm('Saare products delete?'))db.ref('products').remove()">🗑 Saare Products Delete</button>
+        <p class="hint">Ye action wapas nahi hota. Pehle backup zaroor lo.</p>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="tab-products" class="tab">
+      <div class="panel-box">
+        <h3 id="formTitle">➕ Naya Product Add Karo</h3>
+        <input type="hidden" id="fId">
+        <div class="grid2">
+          <div><label>Product Naam *</label><input id="fName" placeholder="Ex: FF Headshot Panel / Source Code / Course"></div>
+          <div><label>Category * (nayi likhoge to store me auto banegi)</label><input id="fCat" list="catList" value="panel" placeholder="panel / code / video / project..."><datalist id="catList"><option value="panel">🎮 Game Panel</option><option value="code">💻 Source Code</option><option value="video">🎬 Video + Files</option><option value="project">🚀 Project</option></datalist></div>
+        </div>
+        <div class="grid2">
+          <div><label>Tags (search ke liye, comma me)</label><input id="fTags" placeholder="ff,panel,headshot"></div>
+          <div><label style="display:flex;gap:8px;align-items:center;margin-top:28px"><input type="checkbox" id="fFeat2" style="width:auto"> ⭐ Featured (hero deal)</label></div>
+        </div>
+        <div class="grid3">
+          <div><label>Price ₹ *</label><input id="fPrice" type="number" placeholder="299"></div>
+          <div><label>Old Price ₹</label><input id="fOld" type="number" placeholder="999"></div>
+          <div><label>Badge</label><input id="fBadge" placeholder="BEST SELLER / HOT / NEW"></div>
+        </div>
+        <div class="grid3">
+          <div><label>Emoji Icon</label><input id="fIcon" placeholder="🎯 🔫 💻 🚀 👕"></div>
+          <div><label>Main Photo Link</label><input id="fImage" placeholder="https://...jpg"></div>
+          <div><label>📷 Photo Upload (auto-compress)</label><input id="fUpload" type="file" accept="image/*" multiple onchange="uploadImages(this)"></div>
+        </div>
+        <div><label>Gallery Links (har line 1 photo - 4-5 best)</label><textarea id="fImages" placeholder="https://...1.jpg&#10;https://...2.jpg"></textarea></div>
+        <div class="grid2">
+          <div><label>Card Color</label><input id="fColor" value="linear-gradient(135deg,#2874f0,#6a11cb)"></div>
+          <div><label>Category Label (store me dikhega)</label><input id="fCatLabel" placeholder="Game Panel"></div>
+        </div>
+        <div><label>Description</label><textarea id="fDesc" placeholder="2-3 line me khasiyat likho"></textarea></div>
+        <div><label>Features (har line me 1)</label><textarea id="fFeat" placeholder="Lifetime validity&#10;Instant delivery&#10;Free support"></textarea></div>
+        <div class="grid2">
+          <div><label>Download Link (Drive link - payment ke baad milega)</label><input id="fDl" placeholder="https://drive.google.com/..."></div>
+          <div><label>Demo Video Link (YouTube)</label><input id="fVideo" placeholder="https://youtube.com/..."></div>
+        </div>
+        <div class="grid3">
+          <div><label>Rating</label><input id="fRating" type="number" step="0.1" value="4.8"></div>
+          <div><label>Stock (0 = out of stock)</label><input id="fStock" type="number" value="99"></div>
+          <div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fActive" checked style="width:auto"> Active (show)</label></div>
+        </div>
+        <div class="qa-row"><button class="green" onclick="saveProduct()">💾 Save Product</button><button onclick="resetForm()">✖ Cancel</button></div>
+      </div>
+      <div class="panel-box"><h3>📦 All Products</h3><input id="prodSearch" placeholder="🔍 Search product..." oninput="renderProducts()" style="margin-bottom:12px"><div id="productList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+    </section>
+
+    <!-- KEYS -->
+    <section id="tab-keys" class="tab">
+      <div class="panel-box"><h3>🔑 License Keys (order par auto-delivery)</h3>
+        <p class="hint">Panel/keys wala maal bechte ho? Yahan keys paste karo — customer ke payment ke <b>turant baad screen par key</b> dikhegi + WhatsApp msg me jayegi. Har key 1 baar use hogi.</p>
+        <div class="grid2">
+          <div><label>Product chuno</label><select id="kProd"></select></div>
+          <div><label>Keys paste karo (har line me 1 key)</label><textarea id="kText" placeholder="ABC-123-XYZ&#10;DEF-456-UVW"></textarea></div>
+        </div>
+        <div class="qa-row"><button class="green" onclick="saveKeys()">💾 Keys Add Karo</button></div>
+      </div>
+      <div class="panel-box"><h3>All Keys</h3><div style="margin-bottom:10px"><select id="kFilter" onchange="renderKeys()"><option value="">All products</option></select></div><div id="keyList">Pehle product select karo</div></div>
+    </section>
+
+    <!-- ORDERS -->
+    <section id="tab-orders" class="tab">
+      <div class="panel-box">
+        <div class="ord-head"><h3>🧾 Orders</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ordSearch" placeholder="🔍 ID / naam / phone" oninput="renderOrders()" style="width:200px"><select id="ordFilter" onchange="renderOrders()"><option value="all">All</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="done">Delivered</option><option value="cancelled">Cancelled</option></select></div></div>
+        <div id="orderList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div>
+      </div>
+    </section>
+
+    <!-- PAYMENTS (sab transactions - auto + manual) -->
+    <section id="tab-payments" class="tab">
+      <div class="panel-box">
+        <h3>💳 Payments — kisne, kya, kab, kaise buy kiya</h3>
+        <p class="hint">Manual methods (UPI/PayPal/Binance) me customer pay karke WhatsApp par screenshot bhejega — yahan <b>Approve</b> dabao to payment confirm ho jayega. AutoPay orders khud paid ho jate hain.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <select id="payMtdFilter" onchange="renderPayments()"><option value="all">All Methods</option><option value="zapupi">⚡ Auto UPI</option><option value="upi">📱 Manual UPI</option><option value="paypal">💳 PayPal</option><option value="binance">🪙 Binance</option></select>
+          <select id="payStFilter" onchange="renderPayments()"><option value="all">All Status</option><option value="pending">⏳ Pending (approve karo)</option><option value="paid">✅ Paid</option><option value="done">📦 Delivered</option><option value="cancelled">❌ Cancelled</option></select>
+          <input id="paySearch" placeholder="🔍 ID / naam / phone" oninput="renderPayments()" style="width:200px">
+        </div>
+        <div id="paySummary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
+        <div id="paymentList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div>
+      </div>
+    </section>
+
+    <!-- QUERIES -->
+    <section id="tab-queries" class="tab">
+      <div class="panel-box"><h3>💬 Customer Messages</h3><div id="queryList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section id="tab-reviews" class="tab">
+      <div class="panel-box"><h3>⭐ All Reviews</h3><div id="reviewList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+    </section>
+
+    <!-- CUSTOMERS -->
+    <section id="tab-customers" class="tab">
+      <div class="panel-box"><h3>👥 Customers (orders se auto)</h3><div id="customerList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+    </section>
+
+    <!-- COUPONS -->
+    <section id="tab-coupons" class="tab">
+      <div class="panel-box"><h3>🎟️ Naya Coupon</h3>
+        <div class="grid3">
+          <div><label>CODE</label><input id="cCode" placeholder="DIWALI100" style="text-transform:uppercase"></div>
+          <div><label>Type</label><select id="cType"><option value="flat">Flat ₹ off</option><option value="percent">Percent % off</option></select></div>
+          <div><label>Value</label><input id="cOff" type="number" placeholder="50"></div>
+        </div>
+        <div><label>Minimum Order ₹</label><input id="cMin" type="number" value="99"></div>
+        <div class="qa-row"><button class="green" onclick="saveCoupon()">💾 Save Coupon</button></div>
+      </div>
+      <div class="panel-box"><h3>All Coupons</h3><div id="couponList"></div></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="tab">
+      <div class="panel-box"><h3>⚙️ Store Settings (save karte hi live site par change)</h3>
+        <div class="grid2">
+          <div><label>Store Naam</label><input id="sName"></div>
+          <div><label>WhatsApp Number (91+10 digit)</label><input id="sWa"></div>
+        </div>
+        <div class="grid2">
+          <div><label>UPI ID (payment isi par aayega)</label><input id="sUpi"></div>
+          <div><label>UPI Naam</label><input id="sUpiName"></div>
+        </div>
+        <div><label>Top Notice</label><input id="sNotice"></div>
+        <div class="grid2">
+          <div><label>Hero Title (khali = default)</label><input id="sHeroT" placeholder="Sab Kuch Ek Jagah..."></div>
+          <div><label>Hero Subtitle</label><input id="sHeroS" placeholder="UPI payment + Instant online delivery"></div>
+        </div>
+        <div><label>Card Payment Link (optional - Razorpay etc.)</label><input id="sPayLink" placeholder="https://razorpay..."></div>
+        <div><label>⚡ ZapUPI Key (Auto Payment ON karne ke liye)</label><input id="sZap" placeholder="zap01..."></div>
+        <p class="hint">ZapUPI dashboard se key copy karke yahan paste + Save karo — store par <b>Auto Pay</b> button live ho jayega. Key khali = sirf Manual UPI.</p>
+        <div class="grid2">
+          <div><label>💳 PayPal Email/ID (khali = off)</label><input id="sPayPal" placeholder="merchant@gmail.com"></div>
+          <div><label>🔗 PayPal Payment Link (optional)</label><input id="sPayPalLink" placeholder="https://paypal.me/..."></div>
+        </div>
+        <div class="grid2">
+          <div><label>🪙 Binance ID/Address (khali = off)</label><input id="sBinance" placeholder="Binance UID ya crypto address"></div>
+          <div><label>🔗 Binance Payment Link (optional)</label><input id="sBinanceLink" placeholder="https://pay.binance.com/..."></div>
+        </div>
+        <p class="hint">💳 Payment method: jo bhi field bharoge wahi user panel me dikhega — <b>Auto UPI</b> (ZapUPI key), <b>Manual UPI</b> (UPI ID), <b>PayPal</b>, <b>Binance</b>. Sirf 1 bharoge to user ko 1 hi method dikhega; sab bharoge to sab dikhenge. Manual methods ka paisa ADMIN khud approve karega (Payments page se).</p>
+        <div class="grid2">
+          <div><label>Offer End Time (countdown)</label><input id="sOffer" type="datetime-local"></div>
+          <div><label style="display:flex;gap:8px;align-items:center;margin-top:28px"><input type="checkbox" id="sMaint" style="width:auto"> 🔧 Maintenance Mode ON</label></div>
+        </div>
+        <p class="hint">⚡ Login ab <b>Firebase Authentication</b> se hota hai — jo admin user Firebase Console → Authentication me email/password se banaya hai, wahi login karega. Koi aur enter nahi kar sakta.</p>
+        <div class="qa-row"><button class="green" onclick="saveSettings()">💾 Save Settings</button></div>
+        <p class="hint">UPI ID galat mat likhna — saara paisa isi par aayega. Test ke liye pehle ₹1 pay karke dekho.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ORDER DETAIL -->
+<div class="modal-bg" id="ordModal"><div class="modal"><button class="modal-close" onclick="closeOrder()">✖</button><div id="ordBody"></div></div></div>
+
+<div class="toast" id="toast"></div>
+<audio id="newOrderSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+<script src="js/firebase-config.js?v=20"></script>
+<script src="js/app.js?v=23"></script>
+</body>
+</html>
