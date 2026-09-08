@@ -13,16 +13,33 @@
       ".read": true,
       ".write": true,
       "$oid": {
-        ".validate": "newData.hasChildren(['orderId','name','items'])"
+        ".validate": "newData.hasChildren(['orderId','name','items','total','status'])",
+        "orderId": { ".validate": "newData.isString()" },
+        "status": { ".validate": "newData.isString() && newData.val().matches(/^(pending|paid|done|cancelled)$/)" },
+        "total": { ".validate": "newData.isNumber() && newData.val() >= 0" }
       }
     },
     "reviews": {
       ".read": true,
-      "$rid": { ".write": "auth != null || (!$data.exists() && newData.exists())" }
+      "$rid": {
+        ".write": "auth != null || (!$data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['name','text','phone','stars'])",
+        "name": { ".validate": "newData.isString() && newData.val().length > 1 && newData.val().length <= 50" },
+        "text": { ".validate": "newData.isString() && newData.val().length > 2 && newData.val().length <= 500" },
+        "phone": { ".validate": "newData.isString() && newData.val().matches(/^[6-9][0-9]{9}$/)" },
+        "stars": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5" }
+      }
     },
     "queries": {
       ".read": true,
-      "$qid": { ".write": "auth != null || (!$data.exists() && newData.exists())" }
+      "$qid": {
+        ".write": "auth != null || (!$data.exists() && newData.exists())",
+        ".validate": "newData.hasChildren(['name','msg','phone','date','status'])",
+        "name": { ".validate": "newData.isString() && newData.val().length > 1 && newData.val().length <= 50" },
+        "msg": { ".validate": "newData.isString() && newData.val().length > 2 && newData.val().length <= 600" },
+        "phone": { ".validate": "newData.isString() && newData.val().matches(/^[6-9][0-9]{9}$/)" },
+        "status": { ".validate": "newData.val() == 'new'" }
+      }
     },
     "keys": {
       ".read": true,

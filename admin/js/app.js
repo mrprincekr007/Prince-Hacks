@@ -5,7 +5,7 @@ function esc(s){return String(s??"").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function csv(name,rows){const c=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+c],{type:"text/csv"}));a.download=name;a.click();}
 
 let PRODUCTS={},ORDERS={},COUPONS={},QUERIES={},REVIEWS={},KEYS={},CATS={};
-let SETTINGS={storeName:"Prince Hacks Store",upiId:"princehacks@okhdfc",upiName:"Prince Hacks",whatsapp:"919999999999",notice:"",offerEnd:0,maintenance:false,heroTitle:"",heroSub:"",deliveryFee:49,freeAbove:999,codAllowed:true,paymentLink:"",zapKey:"",paypal:"",paypalLink:"",binance:"",binanceLink:""};
+let SETTINGS={storeName:"Prince Hacks Store",upiId:"princehacks@okhdfc",upiName:"Prince Hacks",whatsapp:"919999999999",notice:"",offerEnd:0,maintenance:false,heroTitle:"",heroSub:"",deliveryFee:49,freeAbove:999,codAllowed:true,paymentLink:"",zapKey:"",paypal:"",paypalLink:"",binance:"",binanceLink:"",blocked:[],contact:[]};
 let salesChart=null,catChart=null,lastOrderCount=0,firstLoad=true;
 const CATL={panel:"Game Panel",code:"Source Code",video:"Video + Files",project:"Project"};
 const STS=["pending","paid","done","cancelled"];
@@ -234,10 +234,11 @@ function printBill(id){const o=ORDERS[id];const w=open("","_blank");
 function renderQueries(){const k=Object.keys(QUERIES||{});$("qCountSide").textContent=k.length;
   $("queryList").innerHTML=k.length?k.reverse().map(id=>{const q=QUERIES[id];
     return `<div class="olist-item"><div><h4>${esc(q.name)} (${esc(q.phone||"")})</h4><small>${esc(q.msg)}<br>${new Date(q.date).toLocaleString("hi-IN")}</small></div>
-    <div class="acts"><a href="https://wa.me/91${esc(q.phone||"")}?text=${encodeURIComponent("Namaste "+(q.name||"")+", jawab: ")}" target="_blank"><button class="wa">Reply</button></a><button class="del" onclick="db.ref('queries/${id}').remove()">✖</button></div></div>`;}).join(""):"<p style='color:#888'>Koi message nahi 🎉</p>";}
+    <div class="acts"><a href="https://wa.me/91${esc(q.phone||"")}?text=${encodeURIComponent("Namaste "+(q.name||"")+", jawab: ")}" target="_blank"><button class="wa">Reply</button></a><button class="del" onclick="blockNum('${esc(q.phone||"")}')" title="Block">🚫</button><button class="del" onclick="db.ref('queries/${id}').remove()">✖</button></div></div>`;}).join(""):"<p style='color:#888'>Koi message nahi 🎉</p>";}
 function renderReviews(){const k=Object.keys(REVIEWS||{});
   $("reviewList").innerHTML=k.length?k.reverse().map(id=>{const r=REVIEWS[id];
-    return `<div class="olist-item"><div><h4>${"★".repeat(r.stars||5)} - ${esc(r.name)}</h4><small>${esc(r.text)}</small></div><div class="acts"><button class="del" onclick="db.ref('reviews/${id}').remove()">Del</button></div></div>`;}).join(""):"<p style='color:#888'>Koi review nahi.</p>";}
+    return `<div class="olist-item"><div><h4>${"★".repeat(r.stars||5)} - ${esc(r.name)} <span style="color:#888;font-weight:400">(${esc(r.phone||"")})</span></h4><small>${esc(r.text)}</small></div><div class="acts"><button class="del" onclick="blockNum('${esc(r.phone||"")}')" title="Block">🚫</button><button class="del" onclick="db.ref('reviews/${id}').remove()">Del</button></div></div>`;}).join(""):"<p style='color:#888'>Koi review nahi.</p>";}
+function blockNum(phone){if(!phone)return;const p=String(phone).replace(/\D/g,"").slice(-10);if(!p){toast("❌ Galat number");return;}if(!confirm("Block number "+p+" ?"))return;const b=(SETTINGS.blocked||[]).map(x=>String(x));if(!b.includes(p)){b.push(p);db.ref("settings/blocked").set(b);toast("🚫 Blocked "+p);}else toast("Pehle se blocked hai.");}
 function renderCustomers(){const m={};Object.values(ORDERS).forEach(o=>{const k=o.phone||"?";m[k]=m[k]||{phone:k,name:o.name,orders:0,spent:0};m[k].orders++;m[k].spent+=+o.total||0;if(o.name)m[k].name=o.name;});
   const list=Object.values(m).sort((a,b)=>b.spent-a.spent);
   $("customerList").innerHTML=list.length?list.map(c=>`<div class="olist-item"><div><h4>${esc(c.name)} - ${esc(c.phone)}</h4><small>${c.orders} orders • ₹${c.spent}</small></div><div class="acts"><a href="https://wa.me/91${esc(c.phone)}" target="_blank"><button class="wa">WA</button></a></div></div>`).join(""):"<p style='color:#888'>No customers.</p>";}
@@ -296,6 +297,10 @@ function fillSettings(){const S=SETTINGS;$("sName").value=S.storeName||"";$("sWa
   $("sZap").value=S.zapKey||"";
   $("sPayPal").value=S.paypal||"";$("sPayPalLink").value=S.paypalLink||"";
   $("sBinance").value=S.binance||"";$("sBinanceLink").value=S.binanceLink||"";
+$("sBlocked").value=(S.blocked||[]).join(", ");
+  const ct=S.contact||[];
+  const gv=c=>{const o=ct.find(x=>x.c===c);return o?o.v:"";};
+  $("sTg").value=gv("tg");$("sIg").value=gv("ig");$("sEm").value=gv("em");$("sLk").value=gv("lk");
   if(S.offerEnd)$("sOffer").value=new Date(+S.offerEnd).toISOString().slice(0,16);
   $("sMaint").checked=!!S.maintenance;}
 function saveSettings(){const d={storeName:$("sName").value.trim(),whatsapp:$("sWa").value.trim(),upiId:$("sUpi").value.trim(),
@@ -304,8 +309,15 @@ function saveSettings(){const d={storeName:$("sName").value.trim(),whatsapp:$("s
   paymentLink:$("sPayLink").value.trim(),zapKey:$("sZap").value.trim(),
   paypal:$("sPayPal").value.trim(),paypalLink:$("sPayPalLink").value.trim(),
   binance:$("sBinance").value.trim(),binanceLink:$("sBinanceLink").value.trim(),
+  blocked:$("sBlocked").value.split(",").map(x=>x.trim()).filter(x=>/^[6-9]\d{9}$/.test(x)),
   offerEnd:$("sOffer").value?new Date($("sOffer").value).getTime():0,
   maintenance:$("sMaint").checked};
+  const ct=[];if(d.whatsapp)ct.push({c:"wa",v:d.whatsapp});
+  if($("sTg").value.trim())ct.push({c:"tg",v:$("sTg").value.trim()});
+  if($("sIg").value.trim())ct.push({c:"ig",v:$("sIg").value.trim()});
+  if($("sEm").value.trim())ct.push({c:"em",v:$("sEm").value.trim()});
+  if($("sLk").value.trim())ct.push({c:"lk",v:$("sLk").value.trim()});
+  d.contact=ct;
   if(!d.upiId||!d.whatsapp){toast("❌ UPI+WA");return;}
   db.ref("settings").update(d).then(()=>toast("✅ Live!"));}
 

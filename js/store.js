@@ -5,7 +5,7 @@ let SETTINGS = { storeName:"Prince Hacks Store", upiId:"princehacks@okhdfc", upi
   whatsapp:"919999999999", notice:"100% Instant Delivery WhatsApp par | UPI Accepted | Trusted Seller",
   adminPass:"prince123", offerEnd:0, maintenance:false,
   heroTitle:"", heroSub:"", deliveryFee:49, freeAbove:999, codAllowed:true, paymentLink:"",
-  zapKey:"", paypal:"", paypalLink:"", binance:"", binanceLink:"" };
+  zapKey:"", paypal:"", paypalLink:"", binance:"", binanceLink:"", blocked:[], contact:[] };
 let COUPONS = { "PRINCE50":{type:"flat",off:50,min:199}, "WELCOME10":{type:"percent",off:10,min:99} };
 
 const DEFAULT_PRODUCTS = [
@@ -90,7 +90,7 @@ if(localStorage.getItem("phs_theme")==="dark"){document.body.classList.add("dark
 function startFirebase(){
   if(typeof firebase==="undefined"||!db){$("syncNote").textContent="(offline mode)";return;}
   try{
-    db.ref("settings").on("value",s=>{if(s.exists()){SETTINGS={...SETTINGS,...s.val()};applySettings();startTimer();}});
+    db.ref("settings").on("value",s=>{if(s.exists()){BLOCKED=(s.val().blocked||[]).map(x=>String(x));SETTINGS={...SETTINGS,...s.val()};applySettings();startTimer();}});
     db.ref("products").on("value",s=>{
       if(!s.exists()){$("syncNote").textContent="• 🟡 Admin se add karo";return;}
       const v=s.val();
@@ -108,8 +108,7 @@ function applySettings(){
   $("storeNameHead").textContent=(SETTINGS.storeName||"Prince Hacks").replace(" Store","");
   $("storeNameFoot").textContent=SETTINGS.storeName;$("storeNameCopy").textContent=SETTINGS.storeName;
   $("noticeText").textContent="";startNotice();$("footerUpi").textContent=SETTINGS.upiId;
-  $("footerWhatsapp").textContent="+"+SETTINGS.whatsapp;
-  $("waFloat").href=`https://wa.me/${SETTINGS.whatsapp}?text=Namaste! Mujhe product chahiye.`;
+$("footerWhatsapp").textContent="+"+SETTINGS.whatsapp;
   $("socWa").href=`https://wa.me/${SETTINGS.whatsapp}`;
   if(SETTINGS.heroTitle)$("heroTitle").innerHTML=esc(SETTINGS.heroTitle);
   if(SETTINGS.heroSub)$("heroSub").textContent=SETTINGS.heroSub;
@@ -155,7 +154,8 @@ function moreProducts(){pageShown+=pageSize();renderProducts();}
 function cardHTML(p){const w=wishlist.includes(String(p.id)),out=(+p.stock||0)===0,dis=SETTINGS.maintenance,offv=p.oldPrice?off(p.price,p.oldPrice):0;
     return `<div class="card ${out?'is-out':''}" onclick="openProduct('${p.id}')" role="button" tabindex="0" aria-label="${esc(p.name)}">
     <div class="card-img" style="background:${p.color||'#2874f0'}">
-    ${p.badge?`<span class="card-badge">${esc(p.badge)}</span>`:""}
+${p.badge?`<span class="card-badge">${esc(p.badge)}</span>`:""}
+    ${p.video?`<span class="card-vid">▶ Demo Video</span>`:""}
     <button class="wish-heart ${w?'active':''}" onclick="event.stopPropagation();toggleWish('${p.id}')" aria-label="Wishlist">${w?'♥':'♡'}</button>${pImg(p)}<button class="qv" onclick="event.stopPropagation();openProduct('${p.id}')">👁 Quick View</button>${out?`<div class="stock-out">OUT OF STOCK</div>`:""}</div>
     <div class="card-body"><div class="card-topline"><span class="card-cat">${esc(p.catLabel||p.category)}</span><span class="rating">${p.rating||4.5} ★ <span>(${p.reviews||0})</span></span></div>
     <h3>${esc(p.name)}</h3>
@@ -199,7 +199,7 @@ function openProduct(id){
         <div class="pd-trust"><span>⚡ Instant Download</span><span>🔑 Auto Key</span><span>✅ Full Support</span></div>
         ${p.desc?`<p class="pd-desc">${esc(p.desc)}</p>`:""}
         ${feats.length?`<div class="pd-feats">${feats.map(f=>`<span>✔ ${esc(f)}</span>`).join("")}</div>`:""}
-        ${p.video?(ytId(p.video)?`<div class="vid-embed"><iframe src="https://www.youtube.com/embed/${ytId(p.video)}" allowfullscreen loading="lazy" title="Demo video"></iframe></div>`:`<a class="vid-btn" href="${p.video}" target="_blank">▶️ Demo Video Dekho</a>`):""}
+        ${p.video?(ytId(p.video)?`<div class="vid-embed"><div class="vid-head">📺 Demo Video (Kaam kaise karta hai)</div><iframe src="https://www.youtube.com/embed/${ytId(p.video)}" allowfullscreen loading="lazy" title="Demo video"></iframe></div>`:`<a class="vid-btn" href="${p.video}" target="_blank">▶️ Demo Video Dekho</a>`):""}
         <div class="pd-qty">
           <span>Quantity</span>
           <div class="qty-row"><button onclick="chQty(-1)">−</button><b id="qNum">1</b><button onclick="chQty(1,'${p.id}')">+</button></div>
@@ -342,6 +342,10 @@ function goPayUpi(orderId,total){
   <button class="btn btn-primary btn-block" style="margin-top:12px;background:#388e3c" onclick="placeOrder('upi')">✅ Maine Pay Kiya</button>
   <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:8px" onclick="renderCheckoutForm()">← Back</button>`;}
 async function placeOrder(pm){const f=window._frm||{name:"",phone:""};const{items,sub,d,total}=getBill();
+  if(!items.length){toast("❌ Product chuno");return;}
+  if(!PH(f.phone)){toast("❌ Sahi number");return;}
+  if(blockedPhone(f.phone)){toast("🚫 Blocked");return;}
+  if(rlHit("od",2,60000)){toast("⏳ Thoda ruko, phir order karo");return;}
   const orderId=window._oid||("PHS"+Math.floor(100000+Math.random()*900000));
   $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔑 Keys nikaal rahe hain...</h2><p style="color:#666">2 second ruko</p></div>`;
   const keys=[];
@@ -420,7 +424,7 @@ const ST_TXT={pending:"⏳ Payment Check",paid:"✅ Paid",done:"✅ Delivered",c
 function openTrack(){$("trackBody").innerHTML=`<h2>📦 Track Order</h2><div class="form-group" style="margin-top:12px"><label>Order ID *</label><input id="tId" placeholder="PHS..." style="text-transform:uppercase"></div>
   <button class="btn btn-primary btn-block" onclick="doTrack()">🔍 Check</button><div id="trackRes"></div>`;$("trackModal").classList.add("show");}
 function closeTrack(){$("trackModal").classList.remove("show");}
-async function doTrack(){const id=$("tId").value.trim().toUpperCase();if(!id)return;$("trackRes").innerHTML="⏳...";
+async function doTrack(){const id=$("tId").value.trim().toUpperCase();if(!id)return;$("trackRes").innerHTML=`<div class="sk-pop"><div class="sk-t"></div><div class="sk-line" style="width:90%"></div><div class="sk-line" style="width:70%"></div><div class="sk-line" style="width:50%"></div></div>`;
   try{const s=await db.ref("orders/"+id).get();if(!s.exists()){$("trackRes").innerHTML=`<div class="track-result">❌ Nahi mila.</div>`;return;}
   const o=s.val();$("trackRes").innerHTML=`<div class="track-result">🧾 <b>${esc(o.orderId)}</b><br>📦 ${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>💰 ₹${o.total}<br>Status: <b>${ST_TXT[o.status]||o.status}</b></div>`;}
   catch(e){$("trackRes").innerHTML=`<div class="track-result">⚠️ Net issue.</div>`;}}
@@ -429,7 +433,7 @@ function openMyOrders(){$("myOrdersBody").innerHTML=`<h2>🧾 My Orders</h2><p s
   <button class="btn btn-primary btn-block" onclick="doMyOrders()">📋 Mere Orders Dekho</button><div id="moRes" style="margin-top:12px"></div>`;$("ordersModal").classList.add("show");}
 function closeMyOrders(){$("ordersModal").classList.remove("show");}
 async function doMyOrders(){const ph=$("moPhone").value.trim();if(!/^[6-9]\d{9}$/.test(ph)){toast("❌ Number");return;}
-  $("moRes").innerHTML="⏳...";
+  $("moRes").innerHTML=`<div class="sk-pop"><div class="sk-t"></div><div class="sk-line" style="width:90%"></div><div class="sk-line" style="width:75%"></div><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:80%"></div></div>`;
   try{const s=await db.ref("orders").get();if(!s.exists()){$("moRes").innerHTML="Koi order nahi.";return;}
   const list=Object.values(s.val()).filter(o=>o.phone===ph).sort((a,b)=>new Date(b.date)-new Date(a.date));
   $("moRes").innerHTML=list.length?list.map(o=>{const dls=(o.items||[]).map(i=>{const p=findP(i.id);return(p&&p.download)?`<a href="${p.download}" target="_blank" style="color:#2874f0;font-weight:800">⬇️ ${esc(i.name)}</a>`:"";}).filter(Boolean).join(" ");
@@ -437,19 +441,36 @@ async function doMyOrders(){const ph=$("moPhone").value.trim();if(!/^[6-9]\d{9}$
   return `<div class="myord"><b>${esc(o.orderId)}</b> - ₹${o.total} - <b>${ST_TXT[o.status]||o.status}</b><br><small>${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>${new Date(o.date).toLocaleString("hi-IN")}</small>${dls?`<br>${dls}`:""}${kys?`<br><span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${kys}</span>`:""}</div>`;}).join(""):"<p>Is number par koi order nahi.</p>";}
   catch(e){$("moRes").innerHTML="⚠️ Net issue.";}}
 
+/* ANTI-SPAM SHIELD */
+let BLOCKED=[];
+function blockedPhone(p){return p&&BLOCKED.includes(String(p));}
+const PH=v=>/^[6-9]\d{9}$/.test(v);
+function rlHit(k,n,w){try{const a=JSON.parse(localStorage.getItem("phs_rl")||"{}");const now=Date.now();const t=(a[k]||[]).filter(x=>now-x<w);if(t.length>=n)return true;t.push(now);a[k]=t.slice(-n);localStorage.setItem("phs_rl",JSON.stringify(a));return false;}catch(e){return false;}}
+function dupPost(k){try{const a=JSON.parse(localStorage.getItem("phs_dup")||"{}");const now=Date.now();if(a[k]&&now-a[k]<600000)return true;a[k]=now;localStorage.setItem("phs_dup",JSON.stringify(a));return false;}catch(e){return false;}}
+
 /* SUPPORT + REVIEW */
 function sendQuery(){const n=$("qName").value.trim(),p=$("qPhone").value.trim(),m=$("qMsg").value.trim();
-  if(n.length<2||m.length<3){toast("❌ Naam+msg");return;}
+  if($("qHp")&&$("qHp").value)return;
+  if(n.length<2||n.length>50||m.length<3||m.length>600){toast("❌ Sahi likho");return;}
+  if(!PH(p)){toast("❌ Sahi number");return;}
+  if(blockedPhone(p)){toast("🚫 Blocked");return;}
+  if(rlHit("q",4,3600000)){toast("⏳ Thoda ruko, phir bhejo");return;}
+  if(dupPost("q"+(p||"")+m)){toast("Ye pehle bhej chuke ho");return;}
   try{if(db)db.ref("queries").push({name:n,phone:p,msg:m,date:Date.now(),status:"new"});}catch(e){}
   open(`https://wa.me/${SETTINGS.whatsapp}?text=${encodeURIComponent(`Help: ${n} (${p}) - ${m}`)}`,"_blank");
   $("qName").value="";$("qPhone").value="";$("qMsg").value="";toast("📩 Sent!");}
-function submitReview(){const n=$("revName").value.trim(),t=$("revText").value.trim(),s=+$("revStars").value;
+function submitReview(){const n=$("revName").value.trim(),t=$("revText").value.trim(),s=+$("revStars").value,p=$("revPhone").value.trim();
+  if($("rvHp")&&$("rvHp").value)return;
   const pv=$("revProd")?.value||"",pp=pv?findP(pv):null,full=pp?`[${pp.name}] ${t}`:t;
-  if(n.length<2||t.length<3){toast("❌ Liko");return;}
-  try{if(db)db.ref("reviews").push({name:n,text:full,stars:s,date:Date.now(),pid:pv||""});}catch(e){}
-  try{if(REV_CACHE)REV_CACHE.push({name:n,text:full,stars:s,date:Date.now(),pid:pv||""});}catch(e){}
+  if(n.length<2||n.length>50||t.length<3||t.length>500){toast("❌ Sahi likho");return;}
+  if(!PH(p)){toast("❌ Sahi number");return;}
+  if(blockedPhone(p)){toast("🚫 Blocked");return;}
+  if(rlHit("rv",3,3600000)){toast("⏳ Thoda ruko, baad me likho");return;}
+  if(dupPost("rv"+(p||"")+t)){toast("Ye review bhej chuke ho");return;}
+  try{if(db)db.ref("reviews").push({name:n,phone:p,text:full,stars:+s||5,date:Date.now(),pid:pv||""});}catch(e){}
+  try{if(REV_CACHE)REV_CACHE.push({name:n,phone:p,text:full,stars:+s||5,date:Date.now(),pid:pv||""});}catch(e){}
   $("reviewGrid").insertAdjacentHTML("afterbegin",`<div class="review"><div class="stars">${"★".repeat(s)}</div><p>"${esc(t)}"</p><b>- ${esc(n)}</b></div>`);
-  $("revName").value="";$("revText").value="";toast("⭐ Thanks!");}
+  $("revName").value="";$("revPhone").value="";$("revText").value="";toast("⭐ Thanks!");}
 
 /* EVENTS */
 document.querySelectorAll(".cat-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeCat=b.dataset.cat;renderProducts();}));
@@ -464,17 +485,25 @@ $("ordersModal").addEventListener("click",e=>{if(e.target.id==="ordersModal")clo
 
 /* MOTION: header shadow + back-top + reveal + counters + bottom-nav sync */
 (function(){
-  const hd=document.querySelector(".header"),bt=$("backTop");
-  addEventListener("scroll",()=>{hd?.classList.toggle("scrolled",scrollY>10);bt?.classList.toggle("show",scrollY>600);},{passive:true});
+  const hd=document.querySelector(".header"),bt=$("backTop"),np=$("napProg");let rq=false,ly=scrollY,_sc=false,sbH=false;
+  const sbEls=Array.from(document.querySelectorAll(".mobile-search"));
+  addEventListener("scroll",()=>{if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;const ns=scrollY>10;hd?.classList.toggle("scrolled",ns);_sc=ns;bt?.classList.toggle("show",scrollY>600);
+    if(scrollY>60&&scrollY>ly+4){sbH=true;}else if(scrollY<ly-4){sbH=false;}else if(scrollY<=60){sbH=false;}
+    sbEls.forEach(e=>e.classList.toggle("sb-hide",sbH));
+    if(np)np.style.setProperty("--p",(Math.min(1,Math.max(0,scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight))).toFixed(4)));
+    ly=scrollY;});},{passive:true});
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}}),{threshold:.12});
   document.querySelectorAll(".section-head,.step,.trust,.review,.support-box,.review-form,.filter-bar").forEach(el=>{el.classList.add("reveal");io.observe(el);});
 })();
+const _bnv=document.getElementById("bottomNav");
+if(_bnv){_bnv.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;_bnv.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));buzz();});}
 const _uC=updateCartUI,_uW=updateWishUI;
-updateCartUI=function(){_uC();try{$("bCart").textContent=cart.reduce((s,c)=>s+c.qty,0);const b=$(".cart-btn");b?.classList.remove("bump");void b?.offsetWidth;b?.classList.add("bump");
-const pill=$("cartPill"),n=cart.reduce((s,c)=>s+c.qty,0),open=$("cartDrawer").classList.contains("open");
-if(pill){if(n>0&&!open){const sub=cartSub(),d=couponDisc(sub),fee=deliveryFee(sub,cartItems());
-pill.style.display="flex";$("pillTxt").textContent=n+" item"+(n>1?"s":"")+" • ₹"+(sub-d+fee).toLocaleString("en-IN");}else pill.style.display="none";}}catch(e){}};
-updateWishUI=function(){_uW();try{$("bWish").textContent=wishlist.length;}catch(e){}};
+updateCartUI=function(){_uC();try{const n=cart.reduce((s,c)=>s+c.qty,0),bc=$("bCart");if(bc){if(n!=(bc.dataset.n||0)){bc.classList.remove("bump");void bc.offsetWidth;bc.classList.add("bump");}bc.dataset.n=n;bc.textContent=n;}const b=$(".cart-btn");b?.classList.remove("bump");void b?.offsetWidth;b?.classList.add("bump");
+const pill=$("cartPill"),n2=cart.reduce((s,c)=>s+c.qty,0),open=$("cartDrawer").classList.contains("open");
+if(pill){if(n2>0&&!open){const sub=cartSub(),d=couponDisc(sub),fee=deliveryFee(sub,cartItems());
+const total=sub-d+fee;
+pill.style.display="flex";$("pillTxt").textContent=n2+" item"+(n2>1?"s":"")+" • ₹"+total.toLocaleString("en-IN");}else pill.style.display="none";}}catch(e){}};
+updateWishUI=function(){_uW();try{const w=wishlist.length,bw=$("bWish");if(bw){if(w!=(bw.dataset.n||0)){bw.classList.remove("bump");void bw.offsetWidth;bw.classList.add("bump");}bw.dataset.n=w;bw.textContent=w;}}catch(e){}};
 
 /* v5: notice rotator, coupons strip, recent, revProd, policies, install, confetti, goShop */
 let _ni=0,_nt=null;
@@ -502,6 +531,22 @@ function openPolicy(k){const p=POLICIES[k];if(!p)return;
   $("policyModal").classList.add("show");}
 function closePolicy(){$("policyModal").classList.remove("show");}
 $("policyModal").addEventListener("click",e=>{if(e.target.id==="policyModal")closePolicy();});
+const C_CONTACT={wa:{i:"fa-brands fa-whatsapp",c:"#22c55e",l:"WhatsApp"},tg:{i:"fa-brands fa-telegram",c:"#1d9bf0",l:"Telegram"},ig:{i:"fa-brands fa-instagram",c:"#e1306c",l:"Instagram"},em:{i:"fa-solid fa-envelope",c:"#f59e0b",l:"Email"},lk:{i:"fa-solid fa-link",c:"#8b5cf6",l:"Link"}};
+function openContact(){
+  const list=(SETTINGS.contact&&SETTINGS.contact.length?SETTINGS.contact:[{c:"wa",v:SETTINGS.whatsapp}]);
+  if(!list.some(x=>x.c==="wa"))list.push({c:"wa",v:SETTINGS.whatsapp});
+  $("contactList").innerHTML=list.filter(x=>x&&x.v).map(x=>{
+    const m=C_CONTACT[x.c]||C_CONTACT.lk;let href=x.v;
+    if(x.c==="wa")href=`https://wa.me/${String(x.v).replace(/\D/g,"")}`;
+    else if(x.c==="tg")href=`https://t.me/${String(x.v).trim().replace(/^@/,"")}`;
+    else if(x.c==="ig")href=`https://instagram.com/${String(x.v).trim().replace(/^@/,"")}`;
+    else if(x.c==="em")href=`mailto:${String(x.v).trim()}`;
+    const val=String(x.v).replace(/^@/,"");
+    return `<a class="ct-row" href="${href}" target="_blank" rel="noopener"><span class="ct-ic" style="--c:${m.c}"><i class="${m.i}"></i></span><span class="ct-t">${m.l}</span><span class="ct-v">${esc(val)}</span><i class="fa-solid fa-chevron-right"></i></a>`;
+  }).join("")||`<p style="color:#64748b;padding:10px">Contact details abhi add nahi hui.</p>`;
+  $("contactModal").classList.add("show");}
+function closeContact(){$("contactModal").classList.remove("show");}
+$("contactModal").addEventListener("click",e=>{if(e.target.id==="contactModal")closeContact();});
 function goShop(){document.getElementById("products").scrollIntoView({behavior:"smooth"});
   setTimeout(()=>{const m=$("searchInputMobile"),d=$("searchInput");
     if(m&&getComputedStyle(m).display!=="none")m.focus({preventScroll:true});else d?.focus({preventScroll:true});},600);}
@@ -552,7 +597,8 @@ function flushViews(){if(!db){_vt=null;return;}const k=Object.keys(_vq);if(!k.le
   _vt=null;}
 async function loadProdReviews(pid){const box=$("prodRev");if(!box)return;
   try{
-    if(!REV_CACHE){if(!REV_PROM)REV_PROM=(db?db.ref("reviews").limitToLast(80).get().catch(()=>null):Promise.resolve(null)).then(s=>{const a=[];if(s&&s.exists())s.forEach(c=>a.push(c.val()));REV_CACHE=a;return a;});await REV_PROM;}
+    if(!REV_CACHE){box.innerHTML=`<div class="sk-pop"><div class="sk-row"><div class="sk-av"></div><div style="flex:1"><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:40%"></div></div></div><div class="sk-line" style="width:90%"></div><div class="sk-row"><div class="sk-av"></div><div style="flex:1"><div class="sk-line" style="width:55%"></div><div class="sk-line" style="width:35%"></div></div></div></div>`;
+    if(!REV_PROM)REV_PROM=(db?db.ref("reviews").limitToLast(80).get().catch(()=>null):Promise.resolve(null)).then(s=>{const a=[];if(s&&s.exists())s.forEach(c=>a.push(c.val()));REV_CACHE=a;return a;});await REV_PROM;}
     const list=(REV_CACHE||[]).filter(r=>r&&(r.pid===String(pid)));
     if(!list.length){box.innerHTML=`<p style="color:#888;font-size:13px">💬 Abhi koi review nahi — pehle tum likho!</p>`;return;}
     box.innerHTML=`<h4 style="margin:12px 0 8px">⭐ Reviews (${list.length})</h4>`+list.slice(-3).reverse().map(r=>`<div class="review" style="margin-bottom:8px"><div class="stars">${"★".repeat(r.stars||5)}${"☆".repeat(5-(r.stars||5))}</div><p>"${esc(r.text)}"</p><b>- ${esc(r.name)}</b></div>`).join("");
@@ -567,7 +613,7 @@ function pickSugg(id){document.querySelectorAll(".sugg").forEach(s=>s.classList.
 $("searchInput")?.addEventListener("input",e=>showSugg(e.target,"suggD"));
 $("searchInputMobile")?.addEventListener("input",e=>showSugg(e.target,"suggM"));
 document.addEventListener("click",e=>{if(!e.target.closest(".search-box"))document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show"));});
-document.addEventListener("scroll",()=>document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show")),{passive:true});
+let _srq=false;document.addEventListener("scroll",()=>{if(_srq)return;_srq=true;requestAnimationFrame(()=>{_srq=false;document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show"));});},{passive:true});
 
 renderProducts();setDeal();startFirebase();startTimer();deepLink();initZap();
 /* VECTOR ICON ENGINE - har emoji turant professional FA vector icon */
@@ -585,8 +631,13 @@ var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:f
 var list=[],x;while((x=w.nextNode()))list.push(x);list.forEach(fixNode);
 document.querySelectorAll("[placeholder]").forEach(function(el){var v=el.getAttribute("placeholder")||"";if(RET().test(v))el.setAttribute("placeholder",v.replace(RET(),"").trim());});
 }catch(e){}}
-eng(document.body);
-document.addEventListener("DOMContentLoaded",function(){eng(document.body);});
-if(window.MutationObserver){new MutationObserver(function(){if(document.body)eng(document.body);}).observe(document.body,{childList:true,subtree:true,characterData:true});}
-setInterval(function(){eng(document.body);},3000);
+let _engP=0;
+function enq(){if(_engP||document.hidden)return;_engP=1;
+  var run=function(){_engP=0;try{eng(document.body);}catch(e){}};
+  if("requestIdleCallback" in window)requestIdleCallback(run,{timeout:1500});else setTimeout(run,250);}
+enq();
+function fxOv(){document.querySelectorAll("body>*").forEach(function(el){if(getComputedStyle(el).position!=="fixed"&&el.style.overflowX!=="hidden")el.style.overflowX="hidden";});}
+fxOv();addEventListener("resize",fxOv);
+document.addEventListener("DOMContentLoaded",enq);
+if(window.MutationObserver){new MutationObserver(enq).observe(document.body,{childList:true,subtree:true,characterData:true});}
 })();
