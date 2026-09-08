@@ -1,4 +1,4 @@
-/* PRINCE HACKS STORE v7 - 100% ONLINE DELIVERY (digital only) */
+﻿/* PRINCE HACKS STORE v7 - 100% ONLINE DELIVERY (digital only) */
 const $ = id => document.getElementById(id);
 
 let SETTINGS = { storeName:"Prince Hacks Store", upiId:"princehacks@okhdfc", upiName:"Prince Hacks",
@@ -83,8 +83,8 @@ function gallery(p){const imgs=[p.image,...(p.images||[])].filter(Boolean);retur
 function pImg(p){const g=gallery(p);if(g.length)return lazyImg(g[0],p.icon||"📦");return p.icon||"📦";}
 
 /* THEME */
-function toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("phs_theme",document.body.classList.contains("dark")?"dark":"light");}
-if(localStorage.getItem("phs_theme")==="dark")document.body.classList.add("dark");
+function toggleTheme(){document.body.classList.toggle("dark");const d=document.body.classList.contains("dark");localStorage.setItem("phs_theme",d?"dark":"light");const ic=$("themeIc");if(ic)ic.className="fa-solid "+(d?"fa-sun":"fa-moon");}
+if(localStorage.getItem("phs_theme")==="dark"){document.body.classList.add("dark");const ic=$("themeIc");if(ic)ic.className="fa-solid fa-sun";}
 
 /* FIREBASE */
 function startFirebase(){
@@ -286,8 +286,8 @@ function buyNow(id,qty=1){buzz();if(SETTINGS.maintenance){toast("🔧 Maintenanc
 function openCheckout(){if(!singleBuy&&!cart.length){toast("Product chuno!");return;}renderCheckoutForm();$("checkoutModal").classList.add("show");}
 function closeCheckout(){$("checkoutModal").classList.remove("show");singleBuy=null;singleQty=1;}
 function getItems(){if(singleBuy){const p=findP(singleBuy.id);return p?[{...singleBuy,p}]:[];}return cartItems();}
-const PAY_LBL={zapupi:"⚡ Auto UPI",upi:"📱 Manual UPI",paypal:"💳 PayPal",binance:"🪙 Binance"};
-function payMtds(){const m=[];if(SETTINGS.zapKey)m.push(["auto","⚡ AutoPay (Instant UPI)","UPI screen khud khulegi — payment 100% automatic"]);if(SETTINGS.upiId)m.push(["upi","📱 Manual UPI (QR)","QR scan karke pay — screenshot WhatsApp par bhejna"]);if(SETTINGS.paypal)m.push(["paypal","💳 PayPal (International)","Card/bank se pay — proof WhatsApp par bhejna"]);if(SETTINGS.binance)m.push(["binance","🪙 Binance (Crypto)","USDT/crypto se pay — proof WhatsApp par bhejna"]);if(!m.length)m.push(["upi","📢 WhatsApp Se Buy","Support se order karo"]);return m;}
+const PAY_LBL={zapupi:"Auto UPI",upi:"Manual UPI",paypal:"PayPal",binance:"Binance"};
+function payMtds(){const m=[];if(SETTINGS.zapKey)m.push(["auto","AutoPay (Instant UPI)","UPI screen khud khulegi — payment 100% automatic","zap"]);if(SETTINGS.upiId)m.push(["upi","Manual UPI (QR)","QR scan karke pay — screenshot WhatsApp par bhejna","upi"]);if(SETTINGS.paypal)m.push(["paypal","PayPal (International)","Card/bank se pay — proof WhatsApp par bhejna","paypal"]);if(SETTINGS.binance)m.push(["binance","Binance (Crypto)","USDT/crypto se pay — proof WhatsApp par bhejna","binance"]);if(!m.length)m.push(["upi","WhatsApp Se Buy","Support se order karo","wa"]);return m;}
 let payMtd="auto";
 function selPay(m){const vals={};["fName","fPhone","fCoupon"].forEach(id=>{const el=$(id);if(el)vals[id]=el.value;});
   payMtd=m;renderCheckoutForm();Object.keys(vals).forEach(id=>{const el=$(id);if(el)el.value=vals[id];});}
@@ -295,9 +295,11 @@ function getBill(){const items=getItems(),sub=items.reduce((s,x)=>s+(+x.p.price)
   const d=couponDisc(sub);const fee=deliveryFee(sub,items);return{items,sub,d,fee,total:sub-d+fee};}
 function renderCheckoutForm(){const{items,sub,d,total}=getBill();
   const mtds=payMtds();if(!mtds.some(m=>m[0]===payMtd))payMtd=mtds[0][0];
-  const lbl=payMtd==="auto"?`⚡ Auto Pay — ₹${total}`:payMtd==="upi"?`📱 UPI QR Se Pay — ₹${total}`:payMtd==="paypal"?`💳 PayPal Se Pay — ₹${total}`:`🪙 Binance Se Pay — ₹${total}`;
-  $("checkoutBody").innerHTML=`<h2>🛒 Checkout</h2><p style="color:#777;font-size:13px;margin-bottom:14px">100% Online delivery (ghar delivery nahi) • ${mtds.length<=1?"":"Payment method chuno: "}</p>
-  <div class="pay-methods">${mtds.map(m=>`<label class="pay-opt ${payMtd===m[0]?"on":""}" onclick="selPay('${m[0]}')"><b>${m[1]}</b><small>${m[2]}</small></label>`).join("")}</div>
+  const pm=({auto:"zap",upi:"upi",paypal:"paypal",binance:"binance"})[payMtd]||"upi";
+  const picon=({zap:"fa-bolt",upi:"fa-qrcode",paypal:"fa-brands fa-paypal",binance:"fa-brands fa-btc"})[pm]||"fa-brands fa-whatsapp";
+  const lbl=`<span class="pm-ic ${pm}"><i class="fa-solid ${picon}"></i></span> Pay — ₹${total}`;
+  $("checkoutBody").innerHTML=`<h2>Checkout</h2><p style="color:#777;font-size:13px;margin-bottom:14px">100% Online delivery (ghar delivery nahi) • ${mtds.length<=1?"":"Payment method chuno: "}</p>
+  <div class="pay-methods">${mtds.map(m=>`<label class="pay-opt ${payMtd===m[0]?"on":""}" onclick="selPay('${m[0]}')"><b><span class="pm-ic ${m[3]}"><i class="fa-solid ${({zap:"fa-bolt",upi:"fa-qrcode",paypal:"fa-brands fa-paypal",binance:"fa-brands fa-btc",wa:"fa-brands fa-whatsapp"})[m[3]]||"fa-bolt"}"></i></span>${m[1]}</b><small>${m[2]}</small></label>`).join("")}</div>
   <div class="checkout-grid"><div>
   <div class="form-group"><label>Naam *</label><input id="fName" placeholder="Prince Kumar"></div>
   <div class="form-group"><label>WhatsApp Number * <small>(keys + files isi par milenge)</small></label><input id="fPhone" maxlength="10" inputmode="numeric" placeholder="10 digit"></div>
@@ -568,18 +570,23 @@ document.addEventListener("click",e=>{if(!e.target.closest(".search-box"))docume
 document.addEventListener("scroll",()=>document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show")),{passive:true});
 
 renderProducts();setDeal();startFirebase();startTimer();deepLink();initZap();
-/* CUSTOM EMOJI ENGINE - har emoji ko designed chip me wrap */
-(function(){var RE_SPLIT=/([\u2600-\u27BF\u2B00-\u2BFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])/g;
-function hasEmoji(s){return /[\u2600-\u27BF\u2B00-\u2BFF\uD800-\uDBFF]/.test(s);}
-function ceWrapAll(){if(!document.body)return;try{
-var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var p=n.parentNode;
-if(!n.nodeValue||!hasEmoji(n.nodeValue)||!p||(p.classList&&p.classList.contains("ce")))return NodeFilter.FILTER_REJECT;
-return NodeFilter.FILTER_ACCEPT;}});
-var list=[],w;while((w=walker.nextNode()))list.push(w);
-list.forEach(function(n){var parts=n.nodeValue.split(RE_SPLIT),frag=document.createDocumentFragment(),added=false;
-parts.forEach(function(p){if(!p)return;
-if(hasEmoji(p)){var s=document.createElement("span");s.className="ce";s.textContent=p;frag.appendChild(s);added=true;}
-else frag.appendChild(document.createTextNode(p));});
-if(added)n.parentNode.replaceChild(frag,n);});
+/* VECTOR ICON ENGINE - har emoji turant professional FA vector icon */
+(function(){
+var REG=function(){return /([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF\u2B00-\u2BFF]+[\uFE0F]?|\uFE0F|[\u25B2\u25BC\u25B6\u25C0])/g};
+var RET=function(){return /([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF\u2B00-\u2BFF]+[\uFE0F]?|\uFE0F|[\u25B2\u25BC\u25B6\u25C0])/};
+var M={"⚡":"fa-bolt","🗲":"fa-bolt","📱":"fa-mobile-alt","📲":"fa-mobile-alt","💳":"fa-credit-card","🪙":"fa-coins","📢":"fa-bullhorn","📣":"fa-bullhorn","🛒":"fa-shopping-cart","🎮":"fa-gamepad","💻":"fa-laptop","🎬":"fa-video","🚀":"fa-rocket","👕":"fa-tshirt","🛠":"fa-tools","👗":"fa-tshirt","🍔":"fa-hamburger","🎧":"fa-headphones","🎵":"fa-music","💿":"fa-compact-disc","📈":"fa-chart-line","📊":"fa-chart-bar","🏆":"fa-trophy","📦":"fa-box","🔥":"fa-fire","⭐":"fa-star","🌟":"fa-star","✨":"fa-star","★":"fa-star","☆":"fa-star","❤":"fa-heart","♥":"fa-heart","♡":"fa-heart","💖":"fa-heart","💛":"fa-heart","💕":"fa-heart","📥":"fa-download","⬇":"fa-arrow-down","📤":"fa-share","🖨":"fa-print","🔑":"fa-key","✅":"fa-check-circle","✔":"fa-check-circle","✓":"fa-check-circle","❌":"fa-times-circle","✖":"fa-times-circle","❎":"fa-times-circle","⏳":"fa-hourglass-half","⏰":"fa-clock","🕐":"fa-clock","🕒":"fa-clock","🕑":"fa-clock","💾":"fa-save","🗑":"fa-trash","✏":"fa-edit","✍":"fa-edit","🔍":"fa-search","🔎":"fa-search","👁":"fa-eye","🏠":"fa-home","👤":"fa-user","💬":"fa-comments","🔗":"fa-link","⚙":"fa-cog","🔒":"fa-lock","🌙":"fa-moon","☾":"fa-moon","🌞":"fa-sun","☉":"fa-sun","🔓":"fa-unlock","🛡":"fa-shield-alt","💰":"fa-money-bill-wave","💸":"fa-money-bill-wave-alt","🌱":"fa-seedling","🧾":"fa-receipt","🔄":"fa-sync","➕":"fa-plus","➖":"fa-minus","🎯":"fa-bullseye","📷":"fa-camera","🎉":"fa-smile","🎊":"fa-smile","❓":"fa-question-circle","⚠":"fa-exclamation-triangle","☀":"fa-sun","🗄":"fa-database","🏪":"fa-store","🧪":"fa-flask","🎁":"fa-gift","🔔":"fa-bell","📄":"fa-file","📚":"fa-book","♟":"fa-chess-pawn","☰":"fa-bars","💥":"fa-bolt","📌":"fa-thumbtack","🚩":"fa-flag","🤝":"fa-handshake","👑":"fa-crown","🎨":"fa-palette","🧩":"fa-puzzle-piece","🤖":"fa-robot","👾":"fa-ghost","🆓":"fa-tag","👥":"fa-users","📋":"fa-clipboard","📜":"fa-scroll","📩":"fa-envelope","📺":"fa-tv","🔁":"fa-exchange-alt","🔧":"fa-wrench","🔫":"fa-crosshairs","😍":"fa-smile-beam","😕":"fa-meh","🤍":"fa-heart","🗂":"fa-folder-open","●":["fa-circle","#94a3b8"],"○":["fa-circle","#94a3b8"],"→":"fa-arrow-right","←":"fa-arrow-left","©":"fa-copyright","🏷":"fa-tag","🚫":"fa-ban","🚚":"fa-truck","🎟":"fa-ticket","🛍":"fa-shopping-bag","▼":"fa-chevron-down","▲":"fa-chevron-up","▶":"fa-caret-right","🟢":["fa-circle","#22c55e"],"🔴":["fa-circle","#ef4444"],"🟡":["fa-circle","#f59e0b"],"🔵":["fa-circle","#3b82f6"],"⚪":["fa-circle","#94a3b8"]};
+function em2fa(s){return s.replace(REG(),function(m){var k=m.replace(/\uFE0F/g,"");if(!M[k])k=m;var e=M[k]||["fa-tag"];var ic=Array.isArray(e)?e[0]:e;var col=Array.isArray(e)?e[1]:null;
+return col?'<i class="fa-solid '+ic+' cb" style="color:'+col+';font-size:9px;vertical-align:2px"></i>':'<i class="fa-solid '+ic+' cb"></i>';});}
+function fixNode(n){if(!n.nodeValue)return;var parts=n.nodeValue.split(REG()),frag=document.createDocumentFragment(),added=false;
+parts.forEach(function(p){if(!p)return;if(RET().test(p)){var d=document.createElement("span");d.innerHTML=em2fa(p);while(d.firstChild)frag.appendChild(d.firstChild);added=true;}else frag.appendChild(document.createTextNode(p));});
+if(added)n.parentNode.replaceChild(frag,n);}
+function eng(){if(!document.body)return;try{
+var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){var p=n.parentNode;if(p&&(p.nodeName==="SCRIPT"||p.nodeName==="STYLE"||p.nodeName==="TITLE"||p.nodeName==="TEXTAREA"))return NodeFilter.FILTER_REJECT;return (n.nodeValue&&RET().test(n.nodeValue))?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;}});
+var list=[],x;while((x=w.nextNode()))list.push(x);list.forEach(fixNode);
+document.querySelectorAll("[placeholder]").forEach(function(el){var v=el.getAttribute("placeholder")||"";if(RET().test(v))el.setAttribute("placeholder",v.replace(RET(),"").trim());});
 }catch(e){}}
-setInterval(ceWrapAll,1400);})();
+eng(document.body);
+document.addEventListener("DOMContentLoaded",function(){eng(document.body);});
+if(window.MutationObserver){new MutationObserver(function(){if(document.body)eng(document.body);}).observe(document.body,{childList:true,subtree:true,characterData:true});}
+setInterval(function(){eng(document.body);},3000);
+})();

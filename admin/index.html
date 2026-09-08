@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel - Prince Hacks Store</title>
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=29">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -96,7 +96,7 @@
       <div class="tb-left"><button class="tb-btn" onclick="toggleSide()" title="Sidebar">☰</button><h2 id="tabTitle">📊 Dashboard</h2></div>
       <div class="tb-right">
         <input id="topSearch" placeholder="🔍 Search... (products/orders)" oninput="topGo(this.value)">
-        <button class="tb-btn" onclick="toggleAdminTheme()" title="Dark/Light">🌙</button>
+        <button class="tb-btn" onclick="toggleAdminTheme()" title="Dark/Light"><i class="fa-solid fa-moon" id="athIc"></i></button>
         <span id="syncClock" title="Last sync">🕒 --:--</span>
         <span id="connDot">🟡 connecting...</span>
       </div>
@@ -339,6 +339,6 @@ Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 😍</textarea>
 <div class="toast" id="toast"></div>
 <audio id="newOrderSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 <script src="js/firebase-config.js?v=20"></script>
-<script src="js/app.js?v=23"></script>
+<script src="js/app.js?v=29"></script>
 </body>
 </html>

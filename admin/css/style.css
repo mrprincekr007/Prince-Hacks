@@ -283,8 +283,7 @@ body.adark .side-group{color:#64748b}
 .sidebar::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#2874f0,#6a11cb);border-radius:8px}
 .sidebar::-webkit-scrollbar-track{background:transparent}
 .side-foot{position:sticky;bottom:-1px;background:#0d1630;padding:14px 6px 8px;z-index:5;border-radius:14px 14px 0 0}
-/* CUSTOM EMOJI CHIP - admin */
-.ce{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;vertical-align:-7px;margin:0 2px;font-size:15px;line-height:1;background:linear-gradient(145deg,#1e2a4d,#0d1630);border:1.5px solid rgba(40,116,240,.45);border-radius:10px;box-shadow:0 5px 12px -4px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);transform:scale(.94)}
-body.adark .ce{background:linear-gradient(145deg,#17203e,#0d1630);border-color:rgba(255,229,0,.45);box-shadow:0 5px 14px -4px rgba(0,0,0,.65),inset 0 0 0 1px rgba(255,255,255,.1)}
+/* VECTOR ICON - admin inline */
+.cb{margin:0 1px;vertical-align:-3px;font-size:1em;display:inline-block}
 .grpi{display:flex;align-items:center;gap:10px}
 .grpi i{width:22px;text-align:center;font-size:15px;background:linear-gradient(120deg,#ffe500,#fb923c);-webkit-background-clip:text;background-clip:text;color:transparent}

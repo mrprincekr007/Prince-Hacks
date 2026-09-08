@@ -769,6 +769,13 @@ body.dark .pay-opt{background:#101a30;border-color:#24334f}
 body.dark .pay-opt b{color:#eee}
 body.dark .pay-opt.on{border-color:#6a11cb;background:#191441}
 body.dark .pay-opt.on b{color:#60a5fa}
-/* CUSTOM EMOJI CHIP - har emoji custom design me */
-.ce{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;vertical-align:-7px;margin:0 2px;font-size:15px;line-height:1;background:linear-gradient(145deg,#ffffff,#eef2ff);border:1.5px solid rgba(40,116,240,.4);border-radius:10px;box-shadow:0 5px 12px -4px rgba(40,116,240,.5),inset 0 0 0 1px rgba(255,255,255,.65);transform:scale(.94)}
-body.dark .ce{background:linear-gradient(145deg,#1a2342,#131c31);border-color:rgba(255,229,0,.45);box-shadow:0 5px 14px -4px rgba(0,0,0,.65),inset 0 0 0 1px rgba(255,255,255,.1)}
+/* VECTOR ICON - inline, proper FA icon rendering */
+.cb{margin:0 1px;vertical-align:-3px;font-size:1em;display:inline-block}
+/* CUSTOM PAYMENT METHOD ICONS */
+.pay-opt b{display:flex;align-items:center;gap:9px}
+.pm-ic{width:34px;height:34px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;color:#fff;flex:none;background:linear-gradient(120deg,#2874f0,#6a11cb);box-shadow:0 6px 14px -4px rgba(40,116,240,.5),inset 0 0 0 1px rgba(255,255,255,.2)}
+.pm-ic.zap{background:linear-gradient(120deg,#00c853,#0091ea)}
+.pm-ic.upi{background:linear-gradient(120deg,#2d9cdb,#0d6efd)}
+.pm-ic.paypal{background:linear-gradient(120deg,#003087,#009cde)}
+.pm-ic.binance{background:linear-gradient(120deg,#f3ba2f,#d9910b);color:#1a1a1a}
+.pm-ic.wa{background:linear-gradient(120deg,#25d366,#128c7e)}
