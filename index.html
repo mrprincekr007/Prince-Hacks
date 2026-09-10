@@ -6,8 +6,8 @@
 <title>Prince Hacks Store - Game Panel, Source Code, Projects</title>
 <meta name="description" content="Prince Hacks Store - Game Panel, Source Code, Video Files aur Projects. UPI payment, instant delivery.">
 <meta http-equiv="origin-trial" content="">
-<link rel="preload" href="css/style.css?v=86" as="style">
-<link rel="stylesheet" href="css/style.css?v=86">
+<link rel="preload" href="css/style.css?v=89" as="style">
+<link rel="stylesheet" href="css/style.css?v=89">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2874f0">
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style">
@@ -368,6 +368,24 @@
   </div>
 </div>
 
+<!-- CONGRATS -->
+<div class="modal-bg" id="congratsModal">
+  <div class="modal congrats">
+    <button class="modal-close" onclick="closeCongrats()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="cong-burst"></div>
+    <div class="cong-ico"><i class="fa-solid fa-crown"></i></div>
+    <h2 class="cong-title">Congratulations!</h2>
+    <p class="cong-sub">Payment successful — aapka order confirm ho gaya 🎉</p>
+    <div id="congProd"></div>
+    <div class="cong-total"><span>Paid Amount</span><b id="congTotal">₹0</b><em class="ok"><i class="fa-solid fa-circle-check"></i> Confirmed</em></div>
+    <div class="cong-row"><span>Order ID</span><b id="congOid">-</b><button onclick="copyOid()">Copy</button></div>
+    <div class="cong-keys" id="congKeys" style="display:none"></div>
+    <div id="congBuy"></div>
+    <div class="cong-wa"><span class="wa-num" id="congWa">+91 00000 00000</span><button onclick="openWaSupport()">WhatsApp</button></div>
+    <button class="cong-close" onclick="closeCongrats()">Shukriya, Theek Hai 🎉</button>
+  </div>
+</div>
+
 <!-- INSTALL -->
 <div class="install-bar" id="installBar" style="display:none">
   <div class="inst-ic"><i class="fa-solid fa-code"></i></div>
@@ -391,7 +409,7 @@
 <button class="cart-pill" id="cartPill" onclick="openCart()" style="display:none"><i class="fa-solid fa-cart-shopping"></i><span id="pillTxt">Cart</span></button>
 
 <script defer src="js/firebase-config.js?v=17"></script>
-<script defer src="js/store.js?v=66"></script>
+<script defer src="js/store.js?v=73"></script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script>
 </body>
 </html>

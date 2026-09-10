@@ -137,9 +137,10 @@ function filtered(){
   if(priceF==="u300")list=list.filter(p=>p.price<300);
   if(priceF==="m800")list=list.filter(p=>p.price>=300&&p.price<=800);
   if(priceF==="a800")list=list.filter(p=>p.price>800);
-  if(sortBy==="low")list=[...list].sort((a,b)=>a.price-b.price);
+if(sortBy==="low")list=[...list].sort((a,b)=>a.price-b.price);
   if(sortBy==="high")list=[...list].sort((a,b)=>b.price-a.price);
   if(sortBy==="rating")list=[...list].sort((a,b)=>(b.rating||0)-(a.rating||0));
+  if(sortBy!=="low"&&sortBy!=="high"&&sortBy!=="rating")list=[...list].sort((a,b)=>((+a.sort||1e9)-(+b.sort||1e9))||((+b.createdAt||0)-(+a.createdAt||0)));
   return list;
 }
 function renderProducts(){
@@ -284,7 +285,7 @@ function closeCart(){$("cartDrawer").classList.remove("open");$("cartBg").classL
 /* CHECKOUT: UPI + auto key delivery */
 function buyNow(id,qty=1){buzz();if(SETTINGS.maintenance){toast("🔧 Maintenance");return;}singleBuy={id:String(id),qty:qty||singleQty||1};closeProduct();closeCart();openCheckout();}
 function openCheckout(){if(!singleBuy&&!cart.length){toast("Product chuno!");return;}renderCheckoutForm();$("checkoutModal").classList.add("show");}
-function closeCheckout(){$("checkoutModal").classList.remove("show");singleBuy=null;singleQty=1;}
+function closeCheckout(){$("checkoutModal").classList.remove("show");singleBuy=null;singleQty=1;clearPendingPay();}
 function getItems(){if(singleBuy){const p=findP(singleBuy.id);return p?[{...singleBuy,p}]:[];}return cartItems();}
 const PAY_LBL={zapupi:"Auto UPI",upi:"Manual UPI",paypal:"PayPal",binance:"Binance"};
 function payMtds(){const m=[];if(SETTINGS.zapKey)m.push(["auto","AutoPay (Instant UPI)","UPI screen khud khulegi — payment 100% automatic","zap"]);if(SETTINGS.upiId)m.push(["upi","Manual UPI (QR)","QR scan karke pay — screenshot WhatsApp par bhejna","upi"]);if(SETTINGS.paypal)m.push(["paypal","PayPal (International)","Card/bank se pay — proof WhatsApp par bhejna","paypal"]);if(SETTINGS.binance)m.push(["binance","Binance (Crypto)","USDT/crypto se pay — proof WhatsApp par bhejna","binance"]);if(!m.length)m.push(["upi","WhatsApp Se Buy","Support se order karo","wa"]);return m;}
@@ -293,12 +294,14 @@ function selPay(m){const vals={};["fName","fPhone","fCoupon"].forEach(id=>{const
   payMtd=m;renderCheckoutForm();Object.keys(vals).forEach(id=>{const el=$(id);if(el)el.value=vals[id];});}
 function getBill(){const items=getItems(),sub=items.reduce((s,x)=>s+(+x.p.price)*x.qty,0);
   const d=couponDisc(sub);const fee=deliveryFee(sub,items);return{items,sub,d,fee,total:sub-d+fee};}
-function renderCheckoutForm(){const{items,sub,d,total}=getBill();
+function renderCheckoutForm(){clearPendingPay();const{items,sub,d,total}=getBill();
   const mtds=payMtds();if(!mtds.some(m=>m[0]===payMtd))payMtd=mtds[0][0];
   const pm=({auto:"zap",upi:"upi",paypal:"paypal",binance:"binance"})[payMtd]||"upi";
   const picon=({zap:"fa-bolt",upi:"fa-qrcode",paypal:"fa-brands fa-paypal",binance:"fa-brands fa-btc"})[pm]||"fa-brands fa-whatsapp";
   const lbl=`<span class="pm-ic ${pm}"><i class="fa-solid ${picon}"></i></span> Pay — ₹${total}`;
+  const isCust=items.some(x=>x.p.custom);
   $("checkoutBody").innerHTML=`<h2>Checkout</h2><p style="color:#777;font-size:13px;margin-bottom:14px">100% Online delivery (ghar delivery nahi) • ${mtds.length<=1?"":"Payment method chuno: "}</p>
+  ${isCust?`<div class="req-banner">🧩 <b>Ye Custom Kaam hai:</b> Payment hone ke baad tu apna <b>naam/logo/details</b> dega — main wahi sab bana ke tujhe <b>My Orders me download link</b> de dunga. Shuru hone se pehle tu kabhi bhi payment wapas maang sakta hai.</div>`:""}
   <div class="pay-methods">${mtds.map(m=>`<label class="pay-opt ${payMtd===m[0]?"on":""}" onclick="selPay('${m[0]}')"><b><span class="pm-ic ${m[3]}"><i class="fa-solid ${({zap:"fa-bolt",upi:"fa-qrcode",paypal:"fa-brands fa-paypal",binance:"fa-brands fa-btc",wa:"fa-brands fa-whatsapp"})[m[3]]||"fa-bolt"}"></i></span>${m[1]}</b><small>${m[2]}</small></label>`).join("")}</div>
   <div class="checkout-grid"><div>
   <div class="form-group"><label>Naam *</label><input id="fName" placeholder="Prince Kumar"></div>
@@ -321,16 +324,27 @@ function readForm(){const g=id=>$(id)?.value.trim()||"";
 function goPay(){const m=payMtd||"upi";if(m==="auto"){zapPay();return;}const f=readForm();if(!f)return;window._frm=f;
   const{total}=getBill(),orderId="PHS"+Math.floor(100000+Math.random()*900000);
   window._oid=orderId;
-  if(m==="upi"){if(SETTINGS.upiId){goPayUpi(orderId,total);return;}$("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>📢 WhatsApp Se Order</h2><p style="color:#666">Abhi koi payment method set nahi hai — WhatsApp par order karo, admin guide karega.</p></div>
+  if(m==="upi"&&!SETTINGS.upiId){$("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>📢 WhatsApp Se Order</h2><p style="color:#666">Abhi koi payment method set nahi hai — WhatsApp par order karo, admin guide karega.</p></div>
   <button class="btn btn-primary btn-block" onclick="placeOrder('upi')">✅ Order Confirm Karo</button>
   <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:8px" onclick="renderCheckoutForm()">← Back</button>`;return;}
-  const ext=m==="paypal"?{...PAY_EXT("paypal")}:PAY_EXT(m);
+  savePendingPay(m,orderId,total);
+  if(m==="upi"){goPayUpi(orderId,total);return;}
+  renderExtPay(m,orderId,total);}
+function renderExtPay(m,orderId,total){const ext=m==="paypal"?{...PAY_EXT("paypal")}:PAY_EXT(m);
   $("checkoutBody").innerHTML=`<div style="text-align:center"><h2>${ext.i} ${ext.t} Se Pay</h2><p><b>${orderId}</b> | <b style="color:#2874f0;font-size:18px">₹${total}</b></p>
   <p style="color:#666;font-size:13px">International ho to PayPal/Binance se pay karo, fir neeche <b>"Maine Pay Kar Diya"</b> dabao aur screenshot WhatsApp par bhejo.</p></div>
   <div class="upi-id-row"><span>${esc(ext.a)}</span><button onclick="navigator.clipboard.writeText('${esc(ext.a)}');toast('Copy!')">Copy</button></div>
   ${ext.link?`<a class="vid-btn" href="${esc(ext.link)}" target="_blank">${ext.i} ${ext.t} se pay karo</a>`:""}
   <button class="btn btn-primary btn-block" style="margin-top:12px;background:#388e3c" onclick="placeOrder('${m}')">✅ Maine Pay Kar Diya</button>
   <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:8px" onclick="renderCheckoutForm()">← Back</button>`;}
+function savePendingPay(m,orderId,total){try{const f=window._frm||{};localStorage.setItem("phs_pay",JSON.stringify({m,orderId,total,name:f.name,phone:f.phone,coupon:f.coupon||"",ts:Date.now()}));}catch(e){}}
+function clearPendingPay(){try{localStorage.removeItem("phs_pay");}catch(e){}}
+let MY_UID="";
+function myUid(){if(MY_UID)return MY_UID;
+  try{let u=localStorage.getItem("phs_uid");
+    if(!u){u="u"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem("phs_uid",u);}
+    MY_UID=u;}catch(e){MY_UID="u"+Math.random().toString(36).slice(2,10);}
+  return MY_UID;}
 function PAY_EXT(m){return m==="paypal"?{t:"PayPal",i:"💳",a:SETTINGS.paypal,link:SETTINGS.paypalLink}:{t:"Binance",i:"🪙",a:SETTINGS.binance,link:SETTINGS.binanceLink};}
 function goPayUpi(orderId,total){
   const upi=`upi://pay?pa=${SETTINGS.upiId}&pn=${encodeURIComponent(SETTINGS.upiName)}&am=${total}&cu=INR&tn=${orderId}`;
@@ -347,31 +361,64 @@ async function placeOrder(pm){const f=window._frm||{name:"",phone:""};const{item
   if(blockedPhone(f.phone)){toast("🚫 Blocked");return;}
   if(rlHit("od",2,60000)){toast("⏳ Thoda ruko, phir order karo");return;}
   const orderId=window._oid||("PHS"+Math.floor(100000+Math.random()*900000));
-  $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔑 Keys nikaal rahe hain...</h2><p style="color:#666">2 second ruko</p></div>`;
-  const keys=[];
-  for(const x of items){for(let i=0;i<x.qty;i++){const k=await claimKey(x.p.id,orderId);if(k)keys.push({id:x.p.id,name:x.p.name,key:k});}}
-  const o={orderId,name:f.name,phone:f.phone,pay:pm==="auto"?"zapupi":(pm||"upi"),
+  window._oid=orderId;clearPendingPay();
+  $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>⏳ Order save ho raha hai...</h2><p style="color:#666">2 second ruko</p></div>`;
+  const o={orderId,name:f.name,phone:f.phone,deviceId:myUid(),pay:pm==="auto"?"zapupi":(pm||"upi"),
     items:items.map(x=>({id:x.p.id,name:x.p.name,price:x.p.price,qty:x.qty})),
-    keys,sub,discount:d,fee:0,total,coupon:cartCoupon,date:new Date().toISOString(),status:"pending"};
+    keys:[],sub,discount:d,fee:0,total,coupon:cartCoupon,date:new Date().toISOString(),status:"pending"};
   try{if(db)db.ref("orders/"+orderId).set(o);}catch(e){}
-  try{if(db)items.forEach(x=>{const left=Math.max(0,(+x.p.stock||99)-x.qty);db.ref("products/"+x.p.id+"/stock").set(left);});}catch(e){}
   renderSuccess(o,false);}
 function renderSuccess(o,isPaid){
+  clearPendingPay();
+  if(isPaid){showCongrats(o);return;}
   const keyTxt=(o.keys||[]).length?(o.keys||[]).map(k=>`${k.name}: ${k.key}`).join(" | "):"keys WhatsApp par milengi";
   const pl=PAY_LBL[o.pay]||"Manual UPI";
   const manual=o.pay!=="zapupi";
   const wa=`https://wa.me/${SETTINGS.whatsapp}?text=${encodeURIComponent(`Order ${o.orderId} | ${o.name} | ${o.phone} | ${o.items.map(i=>i.name+"x"+i.qty).join(", ")} | ₹${o.total} (${pl}) | Payment proof: "${manual?"🧾 screenshot isi chat me bheja hai →":"AutoPay honest ho gaya"}" | Keys: ${keyTxt}`)}`;
-  const dls=o.items.map(i=>{const p=findP(i.id);return(p&&p.download)?`<a href="${p.download}" target="_blank">⬇️ ${esc(p.name)}</a>`:"";}).join("");
+  const dls=isPaid?o.items.map(i=>{const p=findP(i.id);return(p&&p.download)?`<a href="${p.download}" target="_blank">⬇️ ${esc(p.name)}</a>`:"";}).join(""):"";
   const keyBox=(o.keys||[]).length?`<div class="dl-box" style="border-color:#f59e0b;background:#fffbeb"><b>🔑 Tumhari Keys (copy kar lo):</b>${(o.keys||[]).map(k=>`<div class="upi-id-row"><span style="font-size:12.5px">${esc(k.name)}:<br><b>${esc(k.key)}</b></span><button onclick="navigator.clipboard.writeText('${esc(k.key)}');toast('Key copy!')">Copy</button></div>`).join("")}</div>`:"";
   $("checkoutBody").innerHTML=`<div class="success-box print-area"><i class="fa-solid fa-circle-check"></i><h2>${isPaid?"✅ Payment Successful! 🎉":"Order Noted! 🎉"}</h2>
   <div class="order-id">${o.orderId}<br>₹${o.total} • ${isPaid?"✅ PAID":"⏳ "+(pl)+" Check Ho Rahi"}</div>
-  ${dls?`<div class="dl-box"><b>⬇️ Turant Download:</b>${dls}</div>`:`<div class="dl-box">📩 Download link <b>WhatsApp par</b> milega.</div>`}
+  ${isPaid?(dls?`<div class="dl-box"><b>⬇️ Turant Download:</b>${dls}</div>`:`<div class="dl-box">📩 Download link <b>WhatsApp par</b> milega.</div>`):`<div class="dl-box">🔒 Files + keys <b>payment confirm hone ke baad</b> yahin aur WhatsApp par milengi.</div>`}
   ${keyBox}
   ${manual?`<div class="dl-box" style="border-color:#2874f0;background:#eff6ff"><b>📲 Payment proof bhejo</b><p style="font-size:13px;margin-top:6px">Neeche WhatsApp button dabao aur payment screenshot bhejo — admin check karke turant delivery karega.</p></div>`:""}
   <a class="wa-btn" href="${wa}" target="_blank">${isPaid||!manual?"WhatsApp Par Details Bhejo":"WhatsApp Par Screenshot Bhejo"}</a>
   <button class="inv-btn" onclick="window.print()">🖨️ Bill</button>
   <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:10px" onclick="finishOrder()">Done</button></div>`;
-  confettiBurst();window._oid=null;}
+confettiBurst();window._oid=null;}
+/* 🎉 Congratulations Popup */
+function showCongrats(o){
+  clearPendingPay();
+  try{localStorage.setItem("phs_got_"+o.orderId,"1");}catch(e){}
+  $("checkoutModal").classList.remove("show");
+  window._oid=o.orderId;
+  const items=o.items||[];
+  $("congProd").innerHTML=items.map(x=>{const p=findP(x.id);const ic=(p&&p.icon)||"📦";
+    return `<div class="cong-item"><span class="ci-ic">${ic}</span><div class="ci-tx"><b>${esc(x.name)}</b><small>Qty ${x.qty}</small></div><b class="ci-amt">₹${(+x.price)*(+x.qty||1)}</b></div>`;}).join("");
+  $("congTotal").textContent="₹"+o.total;
+  $("congOid").textContent=o.orderId;
+  const k=(o.keys||[]);const ck=$("congKeys");
+  if(k.length){ck.style.display="block";
+    ck.innerHTML=`<b class="cb-h"><i class="fa-solid fa-key"></i> Aapki Keys — copy kar ke save karo</b>`+k.map(x=>`<div class="keyline"><span>${esc(x.name)}:</span><b>${esc(x.key)}</b><button onclick="navigator.clipboard.writeText('${esc(x.key)}');toast('Key copy ✅')">Copy</button></div>`).join("");
+  }else{ck.style.display="none";}
+  const ps=items.map(x=>findP(x.id)).filter(Boolean);
+  let buy="";
+  const vid=ps.find(p=>p.video&&String(p.video).trim());
+  if(vid)buy+=`<a class="vid-btn" href="${esc(vid.video)}" target="_blank"><i class="fa-solid fa-circle-play"></i> ▶ Demo Video Dekho</a>`;
+  const dls=ps.filter(p=>p.download&&String(p.download).trim());
+  if(dls.length===1)buy+=`<a class="btn btn-primary btn-block btn-lg cong-dl" href="${esc(dls[0].download)}" target="_blank"><i class="fa-solid fa-circle-down"></i> Download Karo &#91;${esc(dls[0].name)}&#93;</a>`;
+  else if(dls.length>1)buy+=`<div class="cong-links">`+dls.map(p=>`<a class="cong-link" href="${esc(p.download)}" target="_blank"><i class="fa-solid fa-circle-down"></i> ${esc(p.name)} — Download</a>`).join("")+`</div>`;
+  else if(!k.length)buy+=`<div class="cong-note">📩 Download link + keys <b>WhatsApp par</b> aapko bheji ja rahi hain.</div>`;
+  $("congBuy").innerHTML=buy;
+  const raw=String(SETTINGS.whatsapp||"").replace(/\D/g,"");
+  $("congWa").textContent=fmtWa(raw);
+  $("congWa").dataset.raw=raw;
+  confettiBurst();
+  $("congratsModal").classList.add("show");}
+function fmtWa(raw){if(raw.length>10&&raw.slice(0,2)==="91")raw=raw.slice(2);raw=String(raw).replace(/^0/,"");return "+91 "+raw.replace(/(\d{5})(\d{0,5})/,"$1 $2").trim();}
+function copyOid(){if(window._oid){navigator.clipboard.writeText(window._oid);toast("Order ID copy ✅");}else toast("Order ID nahi mila");}
+function openWaSupport(){const raw=$("congWa").dataset.raw||String(SETTINGS.whatsapp||"").replace(/\D/g,"");open("https://wa.me/"+raw+"?text="+encodeURIComponent("Namaste, mera order "+window._oid+" ho gaya hai ✅"),"_blank");}
+function closeCongrats(){$("congratsModal").classList.remove("show");finishOrder();}
 /* ⚡ ZapUPI Auto Payment */
 function initZap(){try{if(typeof ZapUPI==="undefined")return;
   ZapUPI.setPaymentCallbacks({onSuccess:function(oid){verifyZap(oid);},onFailed:function(oid){zapFailed(oid,"Payment fail ho gayi.");},onTimeout:function(oid){zapFailed(oid,"Payment ka time khatam ho gaya.");}});}catch(e){}}
@@ -382,21 +429,31 @@ function zapPay(){const f=readForm();if(!f)return;
   if(total<1||total>5000){toast("❌ Amount ₹1-5000 ke beech hona chahiye");return;}
   const orderId="PHS"+Date.now();
   window._frm=f;window._oid=orderId;
-  const o={orderId,name:f.name,phone:f.phone,pay:"zapupi",
+  const o={orderId,name:f.name,phone:f.phone,deviceId:myUid(),pay:"zapupi",
     items:items.map(x=>({id:x.p.id,name:x.p.name,price:x.p.price,qty:x.qty})),
     keys:[],sub,discount:d,fee:0,total,coupon:cartCoupon,date:new Date().toISOString(),status:"pending"};
-  try{if(db)db.ref("orders/"+orderId).set(o);}catch(e){}
+try{if(db)db.ref("orders/"+orderId).set(o);}catch(e){}
+  savePendingPay("auto",orderId,total);
   $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>⚡ Payment khul raha hai...</h2><p style="color:#666">Ruko, UPI screen aa rahi hai</p></div>`;
   ZapUPI.createOrder({zap_key:SETTINGS.zapKey,order_id:orderId,amount:String(total),customer_mobile:f.phone,
     remark:(items.map(x=>x.p.name+"x"+x.qty).join(", ")).slice(0,120)},
     {onResponse:function(url,oid){ZapUPI.loadPayment(url);},
      onError:function(err){toast("❌ "+err);renderCheckoutForm();prefillFrm();}});}
-async function verifyZap(orderId){
-  $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔍 Payment check ho rahi hai...</h2><p style="color:#666">2 second ruko</p></div>`;
+async function verifyZap(orderId,retry){
+  retry=retry||0;
+  if(!SETTINGS.zapKey){if(retry<4){setTimeout(function(){verifyZap(orderId,retry+1);},700);return;}
+    $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔍 Payment check…</h2><p style="color:#666">Net aate hi payment confirm ho jayegi</p><button class="btn btn-primary btn-block" style="margin-top:12px" onclick="verifyZap('${esc(orderId)}')">🔁 Dobara Check</button></div>`;return;}
+  $("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔍 Payment check ho rahi hai...</h2><p style="color:#666">${retry<3?"Dobara check ho raha hai... ("+(retry+1)+"/4)":"Bahut der ho gayi, last check..."}</p></div>`;
   ZapUPI.orderStatus({zap_key:SETTINGS.zapKey,order_id:orderId},{
-    onResponse:async function(oid,data){const st=data&&data.data?data.data.status:"";
-      if(st==="success"){await fulfillZap(oid);}else{zapFailed(oid,"Payment confirm nahi hui.");}},
-    onError:function(err){zapFailed(orderId,"Status check fail: "+err);}});}
+    onResponse:async function(oid,data){
+      const st=data&&data.data?String(data.data.status).toLowerCase():"";
+      if(st==="success"||st==="completed"||st==="1"||st==="captured"){await fulfillZap(oid);return;}
+      if(st==="failed"||st==="cancelled"||st==="0"){zapFailed(oid,"Payment fail ho gayi: "+st);return;}
+      if(retry<4){setTimeout(function(){verifyZap(oid,retry+1);},3000);return;}
+      zapFailed(oid,"Payment confirm nahi ho payi. Order ID save hai — admin approve karega.");},
+    onError:function(err){
+      if(retry<4){setTimeout(function(){verifyZap(orderId,retry+1);},3000);return;}
+      zapFailed(orderId,"Status check fail: "+err);}});}
 async function fulfillZap(orderId){
   let o=null;try{if(db){const s=await db.ref("orders/"+orderId).get();if(s.exists())o=s.val();}}catch(e){}
   if(!o){zapFailed(orderId,"Order nahi mila.");return;}
@@ -409,7 +466,8 @@ async function fulfillZap(orderId){
 function zapFailed(orderId,msg){
   $("checkoutBody").innerHTML=`<div class="success-box"><i class="fa-solid fa-circle-xmark" style="font-size:60px;color:#ef4444"></i><h2>Payment Fail ❌</h2>
   <p style="color:#555;font-size:14px">${esc(msg||"")}<br>Order ID: <b>${esc(orderId||"")}</b> (pending me save hai)</p>
-  <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="zapPay()">🔁 Dobara Try Karo</button>
+  <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="verifyZap('${esc(orderId||"")}')">🔁 Payment Ho Gaya Hai — Check Karo</button>
+  <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:8px" onclick="zapPay()">💰 Dobara Bhejo</button>
   <button class="btn btn-outline btn-block" style="color:#555;border-color:#ccc;margin-top:8px" onclick="renderCheckoutForm();prefillFrm()">Manual UPI Se Karo</button></div>`;}
 async function claimKey(pid,orderId){try{if(!db)return "";
   const s=await db.ref("keys/"+pid).get();if(!s.exists())return "";
@@ -419,6 +477,38 @@ async function claimKey(pid,orderId){try{if(!db)return "";
   const k=await db.ref("keys/"+pid+"/"+fk+"/key").get();return k.exists()?String(k.val()):"";}catch(e){return "";}}
 function finishOrder(){if(singleBuy)cart=cart.filter(x=>x.id!==singleBuy.id);else cart=[];cartCoupon=null;singleBuy=null;singleQty=1;saveCart();updateCartUI();closeCheckout();toast("🎉 Thanks!");}
 
+function restorePendingPay(){let p=null;try{p=JSON.parse(localStorage.getItem("phs_pay")||"null");}catch(e){}
+  if(!p||Date.now()-(p.ts||0)>21600000)return;
+  if(p.m==="auto"){$("checkoutModal").classList.add("show");
+    if(SETTINGS.zapKey){verifyZap(p.orderId);}
+    else{window._payWait=(window._payWait||0)+1;if(window._payWait<10)setTimeout(function(){restorePendingPay();},600);
+      else{$("checkoutBody").innerHTML=`<div style="text-align:center;padding:34px"><h2>🔍 Payment check…</h2><p style="color:#666">Net aate hi payment confirm ho jayegi</p><button class="btn btn-primary btn-block" style="margin-top:12px" onclick="verifyZap('${esc(p.orderId)}')">🔁 Dobara Check</button></div>`;}}
+    return;}
+  window._oid=p.orderId;window._frm={name:p.name||"",phone:p.phone||"",coupon:p.coupon||""};
+  if(p.coupon&&COUPONS[p.coupon])cartCoupon=p.coupon;
+  $("checkoutModal").classList.add("show");
+  if(p.m==="upi"){goPayUpi(p.orderId,p.total);}else{renderExtPay(p.m,p.orderId,p.total);}
+  toast("Payment screen wapas aa gayi ✅");}
+/* 🛡️ Device-based recovery — chahe Chrome udaa do, 1 ghanta baad khullou, caught by Firebase */
+async function restorePaid(){
+  if(typeof db==="undefined"||!db)return;
+  for(let i=0;i<8&&!PRODUCTS.length;i++){await new Promise(r=>setTimeout(r,500));}
+  const uid=myUid();
+  try{
+    const s=await db.ref("orders").get();if(!s.exists())return;
+    const mine=Object.values(s.val()).filter(o=>o.deviceId===uid).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    if(!mine.length)return;
+    const paid=mine.find(o=>o.status==="paid"||o.status==="done");
+    if(paid){const seen="phs_got_"+paid.orderId;
+      try{if(localStorage.getItem(seen))return;}catch(e){}
+      try{localStorage.setItem(seen,"1");}catch(e){}
+      showCongrats(paid);return;}
+    const pend=mine.find(o=>o.status==="pending"&&o.pay==="zapupi");
+    if(pend&&(Date.now()-new Date(pend.date||0).getTime())<3600000){
+      $("checkoutModal").classList.add("show");
+      if(SETTINGS.zapKey)verifyZap(pend.orderId);}
+  }catch(e){}}
+
 /* TRACK + MY ORDERS */
 const ST_TXT={pending:"⏳ Payment Check",paid:"✅ Paid",done:"✅ Delivered",cancelled:"❌ Cancelled"};
 function openTrack(){$("trackBody").innerHTML=`<h2>📦 Track Order</h2><div class="form-group" style="margin-top:12px"><label>Order ID *</label><input id="tId" placeholder="PHS..." style="text-transform:uppercase"></div>
@@ -426,7 +516,7 @@ function openTrack(){$("trackBody").innerHTML=`<h2>📦 Track Order</h2><div cla
 function closeTrack(){$("trackModal").classList.remove("show");}
 async function doTrack(){const id=$("tId").value.trim().toUpperCase();if(!id)return;$("trackRes").innerHTML=`<div class="sk-pop"><div class="sk-t"></div><div class="sk-line" style="width:90%"></div><div class="sk-line" style="width:70%"></div><div class="sk-line" style="width:50%"></div></div>`;
   try{const s=await db.ref("orders/"+id).get();if(!s.exists()){$("trackRes").innerHTML=`<div class="track-result">❌ Nahi mila.</div>`;return;}
-  const o=s.val();$("trackRes").innerHTML=`<div class="track-result">🧾 <b>${esc(o.orderId)}</b><br>📦 ${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>💰 ₹${o.total}<br>Status: <b>${ST_TXT[o.status]||o.status}</b></div>`;}
+  const o=s.val();$("trackRes").innerHTML=`<div class="track-result">🧾 <b>${esc(o.orderId)}</b><br>📦 ${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>💰 ₹${o.total}<br>Status: <b>${ST_TXT[o.status]||o.status}</b>${o.req&&o.req.appName?`<br>📝 Kaam: ${esc(o.req.appName)}`:""}${o.status==="done"&&o.delivery&&o.delivery.link?`<br><a class="deliv-btn" href="${esc(o.delivery.link)}" target="_blank">⬇️ Download Ready!</a>`:""}</div>`;}
   catch(e){$("trackRes").innerHTML=`<div class="track-result">⚠️ Net issue.</div>`;}}
 function openMyOrders(){$("myOrdersBody").innerHTML=`<h2>🧾 My Orders</h2><p style="color:#666;font-size:13px">Jis number se order kiya tha wahi dalo</p>
   <div class="form-group" style="margin-top:10px"><label>WhatsApp Number *</label><input id="moPhone" maxlength="10" inputmode="numeric" placeholder="10 digit"></div>
@@ -436,10 +526,41 @@ async function doMyOrders(){const ph=$("moPhone").value.trim();if(!/^[6-9]\d{9}$
   $("moRes").innerHTML=`<div class="sk-pop"><div class="sk-t"></div><div class="sk-line" style="width:90%"></div><div class="sk-line" style="width:75%"></div><div class="sk-line" style="width:60%"></div><div class="sk-line" style="width:80%"></div></div>`;
   try{const s=await db.ref("orders").get();if(!s.exists()){$("moRes").innerHTML="Koi order nahi.";return;}
   const list=Object.values(s.val()).filter(o=>o.phone===ph).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  $("moRes").innerHTML=list.length?list.map(o=>{const dls=(o.items||[]).map(i=>{const p=findP(i.id);return(p&&p.download)?`<a href="${p.download}" target="_blank" style="color:#2874f0;font-weight:800">⬇️ ${esc(i.name)}</a>`:"";}).filter(Boolean).join(" ");
-  const kys=(o.keys||[]).map(k=>`<span style="background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:2px 8px;font-size:12px">🔑 ${esc(k.name)}: <b>${esc(k.key)}</b></span>`).join(" ");
-  return `<div class="myord"><b>${esc(o.orderId)}</b> - ₹${o.total} - <b>${ST_TXT[o.status]||o.status}</b><br><small>${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>${new Date(o.date).toLocaleString("hi-IN")}</small>${dls?`<br>${dls}`:""}${kys?`<br><span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${kys}</span>`:""}</div>`;}).join(""):"<p>Is number par koi order nahi.</p>";}
+$("moRes").innerHTML=list.length?list.map(o=>{const ready=(o.status==="paid"||o.status==="done");
+  const dls=ready?(o.items||[]).map(i=>{const p=findP(i.id);return(p&&p.download)?`<a href="${p.download}" target="_blank" style="color:#2874f0;font-weight:800">⬇️ ${esc(i.name)}</a>`:"";}).filter(Boolean).join(" "):"";
+  const kys=ready?(o.keys||[]).map(k=>`<span style="background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:2px 8px;font-size:12px">🔑 ${esc(k.name)}: <b>${esc(k.key)}</b></span>`).join(" "):"";
+  const note=o.status==="pending"?`<br><small style="color:#ea580c">⏳ Payment check ho raha hai — files/keys confirm hone par milengi</small>`:"";
+  const cust=(o.items||[]).filter(i=>{const p=findP(i.id);return p&&p.custom;});
+  const rid=o.orderId;
+  let custBox="";
+  if(cust.length&&o.status==="paid"){
+    if(!o.req)custBox=`<div class="req-frm"><b>📝 Apni Requirement Bhejo — tumhara naam/logo par banake denge:</b>
+      <input id="reqName-${rid}" placeholder="Banane par naam kya dikhe? (App/Website/Panel ka naam)">
+      <textarea id="reqDesc-${rid}" placeholder="Kya chahiye? Kaunse features? Koi design/idea ho to likho..."></textarea>
+      <input type="file" id="reqLogo-${rid}" accept="image/*" onchange="reqLogoPick('${rid}')">
+      <small id="reqLogoNm-${rid}" style="color:#888">+ Logo/chhap add karo (optional)</small>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="submitReq('${rid}')">🚀 Details Bhejo — Kaam Shuru!</button></div>`;
+    else custBox=`<div class="req-done">✅ Aapki details aa gayi: <b>${esc(o.req.appName)}</b> — kaam shuru ho gaya 🔨<br><small>Ready hote hi yahan download milegi.</small></div>`;
+  }
+  if(cust.length&&o.status==="done"&&o.delivery&&o.delivery.link)custBox=`<a class="deliv-btn" href="${esc(o.delivery.link)}" target="_blank">⬇️ Aapka ${esc((o.req&&o.req.appName)||"Product")} ready hai! — Download Karo</a>`;
+  return `<div class="myord"><b>${esc(o.orderId)}</b> - ₹${o.total} - <b>${ST_TXT[o.status]||o.status}</b><br><small>${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>${new Date(o.date).toLocaleString("hi-IN")}</small>${custBox}${dls?`<br>${dls}`:""}${kys?`<br><span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${kys}</span>`:""}${note}</div>`;}).join(""):"<p>Is number par koi order nahi.</p>";}
   catch(e){$("moRes").innerHTML="⚠️ Net issue.";}}
+/* ✍️ Custom Job — user apni requirement bhejta hai (name/logo/details) */
+let _reqLogos={};
+function reqLogoPick(rid){const el=$("reqLogo-"+rid);const f=el.files[0];if(!f)return;toast("⏳ Logo compress...");
+  const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");
+    const mx=360,sc=Math.min(1,mx/Math.max(img.width,img.height));c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    _reqLogos[rid]=c.toDataURL("image/jpeg",.7);
+    const nm=$("reqLogoNm-"+rid);if(nm){nm.textContent="✅ Logo lag gaya ("+f.name+")";nm.style.color="#16a34a";}
+    toast("Logo ready ✅ phir 'Details Bhejo' dabao");};img.src=r.result;};r.readAsDataURL(f);el.value="";}
+async function submitReq(rid){const name=$("reqName-"+rid).value.trim();if(!name){toast("❌ Naam likhna zaroori");$("reqName-"+rid).classList.add("err-shake");setTimeout(()=>$("reqName-"+rid).classList.remove("err-shake"),600);return;}
+  const dec=$("reqDesc-"+rid).value.trim();
+  if(dec.length>800){toast("❌ Zyada lamba likh diya");return;}
+  const cont=$("reqContact-"+rid)?$("reqContact-"+rid).value.trim().replace(/\D/g,""):"";
+  if(cont&&!PH(cont)){toast("❌ Contact number sahi dalo (10 digit)");return;}
+  const data={appName:name,appDesc:dec,logo:_reqLogos[rid]||"",contact:cont,submittedAt:Date.now()};
+  try{await db.ref("orders/"+rid+"/req").set(data);toast("✅ Details bhej di! Admin ko mil gaya.");doMyOrders();}catch(e){toast("⚠️ Net issue — dobara try karo");}}
 
 /* ANTI-SPAM SHIELD */
 let BLOCKED=[];
@@ -480,6 +601,7 @@ const doSearch=debounce(()=>{pageShown=pageSize();renderProducts();},200);
 ["searchInput","searchInputMobile"].forEach(id=>$(id)?.addEventListener("input",e=>{searchText=e.target.value.toLowerCase().trim();doSearch();}));
 $("productModal").addEventListener("click",e=>{if(e.target.id==="productModal")closeProduct();});
 $("checkoutModal").addEventListener("click",e=>{if(e.target.id==="checkoutModal")closeCheckout();});
+$("congratsModal").addEventListener("click",e=>{if(e.target.id==="congratsModal")closeCongrats();});
 $("trackModal").addEventListener("click",e=>{if(e.target.id==="trackModal")closeTrack();});
 $("ordersModal").addEventListener("click",e=>{if(e.target.id==="ordersModal")closeMyOrders();});
 
@@ -618,7 +740,10 @@ $("searchInputMobile")?.addEventListener("input",e=>showSugg(e.target,"suggM"));
 document.addEventListener("click",e=>{if(!e.target.closest(".search-box"))document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show"));});
 let _srq=false;document.addEventListener("scroll",()=>{if(_srq)return;_srq=true;requestAnimationFrame(()=>{_srq=false;document.querySelectorAll(".sugg").forEach(s=>s.classList.remove("show"));});},{passive:true});
 
-renderProducts();setDeal();startFirebase();startTimer();deepLink();initZap();
+renderProducts();setDeal();startFirebase();startTimer();deepLink();initZap();restorePendingPay();myUid();restorePaid();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;
+  let p=null;try{p=JSON.parse(localStorage.getItem("phs_pay")||"null");}catch(e){}
+  if(p&&p.m==="auto"&&Date.now()-(p.ts||0)<21600000){$("checkoutModal").classList.add("show");if(SETTINGS.zapKey)verifyZap(p.orderId);else restorePendingPay();}});
 /* VECTOR ICON ENGINE - har emoji turant professional FA vector icon */
 (function(){
 var REG=function(){return /([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF\u2B00-\u2BFF]+[\uFE0F]?|\uFE0F|[\u25B2\u25BC\u25B6\u25C0])/g};

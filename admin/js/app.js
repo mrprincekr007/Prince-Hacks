@@ -134,7 +134,7 @@ function saveProduct(){const name=$("fName").value.trim(),price=+$("fPrice").val
   const cat=$("fCat").value.trim().toLowerCase().replace(/\s+/g,"")||"other";
   const id=$("fId").value||db.ref("products").push().key;
   db.ref("products/"+id).set({name,category:cat,catLabel:$("fCatLabel").value.trim()||CATL[cat]||cat,
-    ptype:"digital",tags:$("fTags").value.trim(),featured:$("fFeat2").checked,
+    ptype:"digital",tags:$("fTags").value.trim(),featured:$("fFeat2").checked,custom:$("fCustom").checked,
     price,oldPrice:+$("fOld").value||price,badge:$("fBadge").value.trim(),icon:$("fIcon").value.trim()||"📦",
     image:$("fImage").value.trim(),images:$("fImages").value.split("\n").map(x=>x.trim()).filter(Boolean).slice(0,6),
     color:$("fColor").value||"linear-gradient(135deg,#2874f0,#6a11cb)",desc:$("fDesc").value.trim(),
@@ -147,20 +147,57 @@ function editProduct(id){const p=PRODUCTS[id];if(!p)return;
   $("fBadge").value=p.badge||"";$("fIcon").value=p.icon||"";$("fImage").value=p.image||"";
   $("fImages").value=(p.images||[]).join("\n");$("fColor").value=p.color||"";$("fCatLabel").value=p.catLabel||"";
   $("fDesc").value=p.desc||"";$("fFeat").value=(p.features||[]).join("\n");$("fDl").value=p.download||"";$("fVideo").value=p.video||"";
-  $("fRating").value=p.rating||4.5;$("fStock").value=p.stock??99;$("fActive").checked=p.active!==false;
+  $("fRating").value=p.rating||4.5;$("fStock").value=p.stock??99;$("fActive").checked=p.active!==false;$("fCustom").checked=!!p.custom;
   $("formTitle").textContent="✏️ Edit: "+p.name;document.querySelector('[data-tab="products"]').click();scrollTo(0,0);}
 function delProduct(id){if(confirm("Delete?"))db.ref("products/"+id).remove().then(()=>toast("🗑 Deleted"));}
 function dupProduct(id){const p={...PRODUCTS[id]};p.name+=" (Copy)";db.ref("products").push({...p,createdAt:Date.now()}).then(()=>toast("📋 Copy!"));}
 function stockCh(id,d){db.ref("products/"+id+"/stock").set(Math.max(0,(+PRODUCTS[id].stock||0)+d));}
-function resetForm(){["fId","fName","fCat","fTags","fPrice","fOld","fBadge","fIcon","fImage","fImages","fCatLabel","fDesc","fFeat","fDl","fVideo"].forEach(i=>$(i).value="");$("fColor").value="linear-gradient(135deg,#2874f0,#6a11cb)";$("fRating").value=4.5;$("fStock").value=99;$("fActive").checked=true;$("fFeat2").checked=false;$("formTitle").textContent="➕ Naya Product (kuch bhi becho!)";}
+function resetForm(){["fId","fName","fCat","fTags","fPrice","fOld","fBadge","fIcon","fImage","fImages","fCatLabel","fDesc","fFeat","fDl","fVideo"].forEach(i=>$(i).value="");$("fColor").value="linear-gradient(135deg,#2874f0,#6a11cb)";$("fRating").value=4.5;$("fStock").value=99;$("fActive").checked=true;$("fFeat2").checked=false;$("fCustom").checked=false;$("formTitle").textContent="➕ Naya Product (kuch bhi becho!)";}
 function renderProducts(){const q=($("prodSearch")?.value||"").toLowerCase(),box=$("productList");
   const keys=Object.keys(PRODUCTS).filter(id=>((PRODUCTS[id].name||"")+" "+(PRODUCTS[id].category||"")).toLowerCase().includes(q));
-  box.innerHTML=keys.length?keys.slice(0,prodLimit).map(id=>{const p=PRODUCTS[id];
+  keys.sort((a,b)=>(+PRODUCTS[a].sort||1e9)-(+PRODUCTS[b].sort||1e9));
+  box.innerHTML=keys.length?keys.slice(0,prodLimit).map((id,i)=>{const p=PRODUCTS[id];
   const kl=KEYS[id]?Object.values(KEYS[id]):[],ku=kl.filter(k=>!k.used).length;
-    return `<div class="plist-item"><div class="plist-emoji" style="background:${p.color||'#2874f0'}">${p.icon||"📦"}</div>
-    <div><h4>⚡ ${esc(p.name)} - ₹${p.price} ${p.featured?"⭐":""}</h4><small>${esc(p.catLabel||p.category)} • ${p.active===false?"🔴 Hidden":"🟢 Live"} • Stock:${p.stock??"∞"} • 👁 ${p.views||0} • 🔑 ${ku}/${kl.length}</small>
-    <div class="stock-btns"><button onclick="stockCh('${id}',-1)">-1</button><button onclick="stockCh('${id}',1)">+1</button></div></div>
-    <div class="acts"><button onclick="editProduct('${id}')">Edit</button><button onclick="dupProduct('${id}')">Copy</button><button class="del" onclick="delProduct('${id}')">Del</button></div></div>`;}).join("")+(keys.length>prodLimit?`<button class="more-btn" onclick="prodLimit+=20;renderProducts()">▼ Aur Dikhao (${keys.length-prodLimit})</button>`:""):"<p style='color:#888'>Kuch nahi.</p>";}
+  const img=p.image||((p.images&&p.images[0])||"");
+  const desc=String(p.desc||"").replace(/\s+/g," ").trim();
+    return `<div class="plist-item" data-pid="${id}" draggable="true" ondragstart="pDragStart(this)" ondragover="pDragOver(event)" ondragleave="pDragLeave(this)" ondrop="pDragDrop(event)" ondragend="pDragEnd(this)"><div class="plist-emoji" style="background:${p.color||'#2874f0'}">${p.icon||"📦"}${img?`<img src="${img}" loading="lazy" onerror="this.remove()">`:""}<span class="ppos">${i+1}</span><span class="dgrip">⠿</span></div>
+    <div style="flex:1;min-width:0">
+      <div class="ptop"><h4>${esc(p.name)}</h4><div class="chips">
+        ${p.featured?`<span class="chip chip-gold">⭐ Featured</span>`:""}
+        ${p.custom?`<span class="chip chip-blue">🧩 Custom</span>`:""}
+        ${p.badge?`<span class="chip chip-orange">${esc(p.badge)}</span>`:""}
+        ${p.active===false?`<span class="chip chip-red">Hidden</span>`:`<span class="chip chip-green">● Live</span>`}
+      </div></div>
+      <div class="pline">💰 <b class="pprice">₹${p.price}</b>${p.oldPrice?` <s class="pold">₹${p.oldPrice}</s>`:""}<span class="pmeta"> • ${esc(p.catLabel||p.category)} • 👁 ${p.views||0}</span></div>
+      <div class="pline">🔑 ${ku}/${kl.length} keys • Stock: <b>${p.stock??"∞"}</b>${p.download?` • <span class="txt-green">🔗 link</span>`:""}${p.video?` • 📺 video`:""}</div>
+      ${desc?`<div class="desc-pv">${esc(desc.slice(0,170))}${desc.length>170?"…":""}</div>`:""}
+      <div class="stock-btns"><button class="mv up" onclick="sortCh('${id}',-1)" title="Store me upar">⬆ Upar</button><button class="mv dn" onclick="sortCh('${id}',1)" title="Store me niche">⬇ Niche</button><button onclick="stockCh('${id}',-1)">-1</button><button onclick="stockCh('${id}',1)">+1</button></div>
+    </div>
+    <div class="acts"><button class="ab ab-edit" onclick="editProduct('${id}')">✎ Edit</button><button class="ab ab-copy" onclick="dupProduct('${id}')">⧉ Copy</button><button class="ab ab-del" onclick="delProduct('${id}')">🗑 Del</button></div></div>`;}).join("")+(keys.length>prodLimit?`<button class="more-btn" onclick="prodLimit+=20;renderProducts()">▼ Aur Dikhao (${keys.length-prodLimit})</button>`:""):"<p style='color:#888'>Kuch nahi.</p>";}
+function sortCh(id,dir){
+  let list=Object.entries(PRODUCTS).map(([i,p])=>({id:i,s:(+p.sort)||null,row:p}));
+  const anyMiss=list.some(x=>x.s===null||x.s===0);
+  if(anyMiss)list.forEach((x,i)=>{x.s=x.s||(i+1);});
+  else list.sort((a,b)=>a.s-b.s);
+  const idx=list.findIndex(x=>x.id===id);if(idx<0)return;
+  const to=idx+dir;if(to<0||to>=list.length){toast("⚠️ Yahan se nahi ja sakta — edge!");return;}
+  [list[idx].s,list[to].s]=[list[to].s,list[idx].s];
+  const up={};list.forEach(x=>{up["products/"+x.id+"/sort"]=x.s;});
+  db.ref().update(up).then(()=>toast("✅ Order update! Store me turant dikhega"));}
+/* drag & drop re-order */
+let _dragId=null;
+function pDragStart(el){_dragId=el.dataset.pid;el.classList.add("dragging");}
+function pDragOver(e){e.preventDefault();const t=e.target.closest(".plist-item");if(t&&t.dataset.pid!==_dragId)t.classList.add("drag-over");}
+function pDragLeave(el){el.classList.remove("drag-over");}
+function pDragDrop(e){e.preventDefault();const t=e.target.closest(".plist-item");if(!t||!_dragId)return;
+  const box=$("productList");let ids=[...box.querySelectorAll(".plist-item")].map(x=>x.dataset.pid);
+  const from=ids.indexOf(_dragId),to=ids.indexOf(t.dataset.pid);
+  if(from<0||to<0||from===to)return;
+  ids.splice(from,1);ids.splice(to,0,_dragId);
+  const up={};ids.forEach((id,i)=>{up["products/"+id+"/sort"]=i+1;});
+  document.querySelectorAll(".plist-item").forEach(x=>x.classList.remove("drag-over","dragging"));
+  db.ref().update(up).then(()=>{toast("✅ Naya order set! Store me turant dikhega");renderProducts();});}
+function pDragEnd(){document.querySelectorAll(".plist-item").forEach(x=>x.classList.remove("drag-over","dragging"));}
 
 /* ORDERS PIPELINE */
 function renderOrders(){const f=$("ordFilter").value,q=($("ordSearch")?.value||"").toLowerCase(),box=$("orderList");
@@ -201,7 +238,7 @@ function renderPayments(){
   box.innerHTML=list.length?list.slice(0,ordLimit).map(o=>{
     const m=payLbl(o.pay||"upi");
     return `<div class="olist-item"><div>
-      <h4>${esc(o.orderId)} — ${esc(o.name)} <span class="status ${o.status==='done'?'done':(o.status==='paid'?'paid':'pending')}">${(o.status||"").toUpperCase()}</span></h4>
+      <h4>${esc(o.orderId)} — ${esc(o.name)} <span class="status ${o.status==='done'?'done':(o.status==='paid'?'paid':'pending')}">${(o.status||"").toUpperCase()}</span> ${o.req?"📝":""} ${o.delivery?"🔗":""}</h4>
       <small>${badgeMtd(o.pay||"upi")} 📦 ${(o.items||[]).map(i=>esc(i.name)+"x"+(i.qty||1)).join(", ")}<br>
       📱 ${esc(o.phone)} • 💰 ₹${o.total} • ${new Date(o.date).toLocaleString("hi-IN")}${m.manual?` • <span style="color:#ea580c">${o.status==="pending"?"⚠️ approval waiting":"manual"}</span>`:""}</small>
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
@@ -212,20 +249,40 @@ function renderPayments(){
       <button onclick="printBill('${o.id}')">🖨️</button><button class="del" onclick="delOrder('${o.id}')">✖</button></div>
     </div>`;}).join("")+(list.length>ordLimit?`<button class="more-btn" onclick="ordLimit+=20;renderPayments()">▼ Aur (${list.length-ordLimit})</button>`:""):"<p style='color:#888'>Koi payment nahi.</p>";
 }
+async function claimOrder(id){const o=ORDERS[id];if(!o)return[];
+  const keys=[];
+  for(const it of (o.items||[])){const pid=it.id;
+    try{if(db){const s=await db.ref("keys/"+pid).get();if(s.exists()){let fk="";s.forEach(c=>{if(!fk&&c.val()&&!c.val().used)fk=c.key;});
+      if(fk){await db.ref("keys/"+pid+"/"+fk).update({used:true,orderId:id,date:Date.now()});
+        const kk=await db.ref("keys/"+pid+"/"+fk+"/key").get();if(kk.exists())keys.push({id:pid,name:it.name,key:String(kk.val())});}}}}catch(e){}
+    try{if(db&&!o.stockDed){const p=PRODUCTS[pid];if(p)db.ref("products/"+pid+"/stock").set(Math.max(0,(+p.stock||99)-(+it.qty||1)));}}catch(e){}
+  }
+  if(!o.stockDed)try{await db.ref("orders/"+id+"/stockDed").set(true);}catch(e){}
+  if(keys.length)try{await db.ref("orders/"+id+"/keys").set(keys);}catch(e){}
+  return keys;}
 function approvePay(id){const o=ORDERS[id]||{};if(!o)return;
-  if(o.status==="pending")db.ref("orders/"+id+"/status").set("paid");
-  toast("✅ Payment approved! Ab deliver karo.");
-  const w=`https://wa.me/91${String(o.phone||"").replace(/\D/g,"")}?text=${encodeURIComponent("Namaste "+o.name+", aapka payment ₹"+o.total+" CONFIRM ho gaya ✅\nOrder: "+o.orderId+"\nFiles/key WhatsApp par bhej rahe hain...")}`;
-  open(w,"_blank");}
+  if(o.status!=="pending"){toast("✅ Pehle se approved");return;}
+  claimOrder(id).then(()=>{db.ref("orders/"+id+"/status").set("paid");
+    toast("✅ Payment approved! Keys claim ho gayi.");
+    const w=`https://wa.me/91${String(o.phone||"").replace(/\D/g,"")}?text=${encodeURIComponent("Namaste "+o.name+", aapka payment ₹"+o.total+" CONFIRM ho gaya ✅\nOrder: "+o.orderId+"\nFiles/key WhatsApp par bhej rahe hain...")}`;
+    open(w,"_blank");});}
 
-function deliverOrder(id){const o=ORDERS[id]||{};const dls=(o.items||[]).map(i=>{const p=PRODUCTS[i.id];return(p&&p.download)?i.name+" -> "+p.download:"";}).filter(Boolean).join("\n");
-  const keys=(o.keys||[]).map(k=>k.name+": "+k.key).join("\n");
-  let msg=`Namaste ${o.name||""} 🙏\nAapka order ${o.orderId||""} DELIVERED ho gaya ✅\n\n📦 ${(o.items||[]).map(i=>i.name+" x"+(i.qty||1)).join(", ")}\n💰 Amount: Rs.${o.total||0}\n\n⬇️ Download:\n${dls||"Link WhatsApp par mil rha hai"}`;
-  if(keys)msg+=`\n🔑 Keys:\n${keys}`;
-  msg+="\n\nThanks for shopping with us! ❤️";
-  if(o.status!=="done")setStatus(id,"done");
+function deliverOrder(id){const o=ORDERS[id]||{};if(!o)return;
+  claimOrder(id).then(keys=>{const dls=(o.items||[]).map(i=>{const p=PRODUCTS[i.id];return(p&&p.download)?i.name+" -> "+p.download:"";}).filter(Boolean).join("\n");
+    const keysTxt=keys.map(k=>k.name+": "+k.key).join("\n");
+    let msg=`Namaste ${o.name||""} 🙏\nAapka order ${o.orderId||""} DELIVERED ho gaya ✅\n\n📦 ${(o.items||[]).map(i=>i.name+" x"+(i.qty||1)).join(", ")}\n💰 Amount: Rs.${o.total||0}\n\n⬇️ Download:\n${dls||"Link WhatsApp par mil rha hai"}`;
+    if(keysTxt)msg+=`\n🔑 Keys:\n${keysTxt}`;
+    msg+="\n\nThanks for shopping with us! ❤️";
+    if(o.status!=="done")setStatus(id,"done");
+    open("https://wa.me/91"+String(o.phone||"").replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
+    toast("📤 Message + Status done");});}
+function deliverLink(id){const o=ORDERS[id]||{};const link=$("ordLink").value.trim();if(!link){toast("❌ Download link daalo");return;}
+  db.ref("orders/"+id+"/delivery").set({link,deliveredAt:Date.now()});
+  db.ref("orders/"+id+"/status").set("done");
+  const appName=(o.req&&o.req.appName)||(o.items||[]).map(i=>i.name).join(", ");
+  const msg=`Namaste ${o.name||""} 🙏\nAapka order ${o.orderId||""} COMPLETE ho gaya! ✅\n\n📦 ${appName}\n\n⬇️ Aapka product hai:\n${link}\n\nMy Orders me bhi milega. Thanks for shopping! ❤️`;
   open("https://wa.me/91"+String(o.phone||"").replace(/\D/g,"")+"?text="+encodeURIComponent(msg),"_blank");
-  toast("📤 Message + Status done");}
+  toast("✅ Link dal diya + WhatsApp bheja");}
 function delOrder(id){if(confirm("Delete?"))db.ref("orders/"+id).remove();}
 function printBill(id){const o=ORDERS[id];const w=open("","_blank");
   w.document.write(`<h2>${esc(SETTINGS.storeName)}</h2><p>Bill ${o.orderId}<br>${esc(o.name)} ${esc(o.phone)}<br>${new Date(o.date).toLocaleString("hi-IN")}</p><hr>${(o.items||[]).map(i=>`<p>${esc(i.name)} x${i.qty||1} - ₹${i.price*(i.qty||1)}</p>`).join("")}${(o.keys||[]).map(k=>`<p>🔑 ${esc(k.name)}: <b>${esc(k.key)}</b></p>`).join("")}<h3>Total ₹${o.total} (${payLbl(o.pay||"upi").l})</h3><script>print()<\/script>`);}
@@ -384,8 +441,17 @@ function openOrder(id){const o=ORDERS[id];if(!o)return;const si=STEPS.findIndex(
   ${(o.keys||[]).length?`<p style="margin-top:8px"><b>🔑 Delivered Keys:</b></p>`+o.keys.map(k=>`<p>• ${esc(k.name)}: <b>${esc(k.key)}</b></p>`).join(""):""}
   ${o.coupon?`<p>🎟️ Coupon: ${esc(o.coupon)} (-₹${o.discount||0})</p>`:""}
   <h3 style="margin-top:8px">Total: ₹${o.total}</h3>
-  <div class="qa-row"><select id="ordStSel" style="flex:1">${STEPS.map(s=>`<option value="${s[0]}" ${o.status===s[0]?"selected":""}>${s[2]}</option>`).join("")}</select>
+<div class="qa-row"><select id="ordStSel" style="flex:1">${STEPS.map(s=>`<option value="${s[0]}" ${o.status===s[0]?"selected":""}>${s[2]}</option>`).join("")}</select>
   <button class="green" onclick="setStatus('${id}',$('ordStSel').value);closeOrder()">✔ Update</button></div>
+  ${o.req?`<div class="req-box" style="margin-top:10px"><b>📝 <span style="color:#f59e0b">Custom Kaam — User Ki Requirement:</span></b>
+    ${o.req.logo?`<img src="${o.req.logo}" style="max-width:140px;max-height:100px;border-radius:10px;margin:8px 0;display:block">`:""}
+    <p style="margin-top:6px"><b>Naam/Type:</b> ${esc(o.req.appName||"-")}</p>
+    <p><b>Chahiye Kya:</b> ${esc(o.req.appDesc||"-")}</p>
+    <p style="color:#888;font-size:12px">Bheja: ${new Date(o.req.submittedAt||0).toLocaleString("hi-IN")} • ${o.req.contact?("📱 "+esc(o.req.contact)):""}</p>
+    <small style="color:#16a34a">✅ User ne details de di — kaam start kar do, ready hote hi upar link daal do</small></div>`:""}
+  ${((o.items||[]).some(it=>{const p=PRODUCTS[it.id];return p&&p.custom;})&&o.status!=="cancelled")?`<div class="req-box" style="margin-top:10px"><b>🔗 <span style="color:#16a34a">Product/App Ready Hai? — Delivery Link Dalo</span></b>
+    <input id="ordLink" placeholder="https://drive.google.com/..." value="${esc((o.delivery&&o.delivery.link)||"")}">
+    <div class="qa-row" style="margin-top:8px"><button class="green" style="flex:1" onclick="deliverLink('${id}');closeOrder()">📦 Link Dalo + Done + WhatsApp Bhejo</button></div></div>`:""}
   <div class="qa-row"><button class="green" style="flex:1" onclick="deliverOrder('${id}');closeOrder()">📦 Deliver + WhatsApp</button>
   <a href="https://wa.me/91${esc(o.phone)}" target="_blank"><button class="wa">WhatsApp</button></a></div>
   <div class="qa-row"><button onclick="printBill('${id}')">🖨️ Bill</button><button class="del" onclick="delOrder('${id}');closeOrder()">Delete</button></div>`;

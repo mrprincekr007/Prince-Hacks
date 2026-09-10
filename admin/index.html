@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel - Prince Hacks Store</title>
-<link rel="stylesheet" href="css/style.css?v=32">
+<link rel="stylesheet" href="css/style.css?v=38">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -252,6 +252,7 @@ Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 🎉</textarea>
         <div class="grid2">
           <div><label>Tags (search ke liye, comma me)</label><input id="fTags" placeholder="ff,panel,headshot"></div>
           <div><label style="display:flex;gap:8px;align-items:center;margin-top:28px"><input type="checkbox" id="fFeat2" style="width:auto"> <svg class="ic"><use href="#i-star"/></svg> Featured (hero deal)</label></div>
+          <div><label style="display:flex;gap:8px;align-items:center;margin-top:28px"><input type="checkbox" id="fCustom" style="width:auto"> 🧩 Custom Job (user apna naam/logo/details bhejega, tu bana ke link dalega)</label></div>
         </div>
         <div class="grid3">
           <div><label>Price ₹ *</label><input id="fPrice" type="number" placeholder="299"></div>
@@ -268,7 +269,7 @@ Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 🎉</textarea>
           <div><label>Card Color</label><input id="fColor" value="linear-gradient(135deg,#2874f0,#6a11cb)"></div>
           <div><label>Category Label (store me dikhega)</label><input id="fCatLabel" placeholder="Game Panel"></div>
         </div>
-        <div><label>Description</label><textarea id="fDesc" placeholder="2-3 line me khasiyat likho"></textarea></div>
+        <div><label>Description (enter dabake lines banao — waisa hi store me dikhega)</label><textarea id="fDesc" rows="7" style="min-height:160px;font-size:14px" placeholder="2-3 line me khasiyat likho&#10;&#10;Har line me enter dabane par store me bhi waisi hi dikhegi"></textarea></div>
         <div><label>Features (har line me 1)</label><textarea id="fFeat" placeholder="Lifetime validity&#10;Instant delivery&#10;Free support"></textarea></div>
         <div class="grid2">
           <div><label>Download Link (Drive link - payment ke baad milega)</label><input id="fDl" placeholder="https://drive.google.com/..."></div>
@@ -281,7 +282,7 @@ Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 🎉</textarea>
         </div>
         <div class="qa-row"><button class="green" onclick="saveProduct()"><svg class="ic"><use href="#i-check"/></svg> Save Product</button><button onclick="resetForm()"><svg class="ic"><use href="#i-close"/></svg> Cancel</button></div>
       </div>
-      <div class="panel-box"><h3><svg class="ic"><use href="#i-box"/></svg> All Products</h3><input id="prodSearch" placeholder="Search product..." oninput="renderProducts()" style="margin-bottom:12px"><div id="productList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
+      <div class="panel-box"><h3><svg class="ic"><use href="#i-box"/></svg> All Products</h3><p class="hint">⬆ Kenchho — product store me <b>upar</b> jayega, ⬇ se <b>niche</b>. (# number = store me pos)</p><input id="prodSearch" placeholder="Search product..." oninput="renderProducts()" style="margin-bottom:12px"><div id="productList"><div class="olist-item"><div><div class="adm-skel w60"></div><div class="adm-skel w40" style="margin-top:7px"></div></div></div></div>
     </section>
 
     <!-- KEYS -->
@@ -405,6 +406,6 @@ Prince Hacks Store me aaj SPESHAL OFFER hai! Jaldi order karo 🎉</textarea>
 <div class="toast" id="toast"></div>
 <audio id="newOrderSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 <script src="js/firebase-config.js?v=20"></script>
-<script src="js/app.js?v=32"></script>
+<script src="js/app.js?v=37"></script>
 </body>
 </html>
